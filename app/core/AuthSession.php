@@ -40,60 +40,71 @@ class AuthSession {
             return null;
         }
         // Return relevant user data stored in session
+        // 'role_id' and 'role_nom' are deprecated as single values.
+        // Roles are now in 'user_roles' (array of objects) and 'user_role_names' (array of strings).
         return [
             'id' => $_SESSION['user_id'],
             'nom' => $_SESSION['user_nom'] ?? null,
             'email' => $_SESSION['user_email'] ?? null,
-            'role_id' => $_SESSION['role_id'] ?? null,
-            'role_nom' => $_SESSION['role_nom'] ?? null,
+            'roles' => $_SESSION['user_roles'] ?? [], // Array of role objects {id, nom}
+            'role_names' => $_SESSION['user_role_names'] ?? [], // Array of role names
             'lang' => $_SESSION['lang'] ?? null,
         ];
     }
 
     /**
      * Gets a specific piece of user data from the session.
-     * @param string $key The key of the data to retrieve (e.g., 'user_nom', 'role_id').
+     * @param string $key The key of the data to retrieve (e.g., 'user_nom', 'user_roles').
      * @return mixed|null The value if set, null otherwise.
      */
     public static function get($key) {
         self::ensureSessionStarted();
+        // Special handling for deprecated keys if needed for backward compatibility during transition
+        if ($key === 'role_id' || $key === 'role_nom') {
+            // error_log("AuthSession::get - Accessing deprecated session key: $key. Use user()['roles'] or user()['role_names'].");
+            // Optionally return primary role's id/name if such concept is maintained
+            // For now, return null to enforce new structure.
+            return null;
+        }
         return $_SESSION[$key] ?? null;
     }
 
 
     /**
-     * Checks if the current logged-in user has a specific role.
-     * @param string|array $roleName Role name or an array of role names to check against.
-     * @return bool True if the user has the role, false otherwise.
+     * Checks if the current logged-in user has a specific role or any of an array of roles.
+     * @param string|array $roleName Single role name (string) or an array of role names.
+     * @return bool True if the user has at least one of the specified roles, false otherwise.
      */
-    public static function hasRole($roleName) {
+    public static function hasRole($roleNameOrNames) {
         self::ensureSessionStarted();
-        if (!self::isLoggedIn() || !isset($_SESSION['role_nom'])) {
+        if (!self::isLoggedIn() || !isset($_SESSION['user_role_names']) || empty($_SESSION['user_role_names'])) {
             return false;
         }
 
-        $userRoleName = $_SESSION['role_nom'];
+        $userRoleNames = $_SESSION['user_role_names']; // This is an array of role names
 
-        if (is_array($roleName)) {
-            return in_array($userRoleName, $roleName);
+        if (is_array($roleNameOrNames)) {
+            // Check if any of user's roles intersect with the required roles
+            return !empty(array_intersect($roleNameOrNames, $userRoleNames));
         }
-        return $userRoleName === $roleName;
+        // Check if the single required role name is in the user's list of roles
+        return in_array($roleNameOrNames, $userRoleNames);
     }
 
     /**
-     * Checks if the current logged-in user's role has a specific permission.
+     * Checks if the current logged-in user has a specific permission through any of their roles.
      * Requires RolePermission_model to be available and DB connection active.
      * @param string $permissionName The name of the permission (e.g., 'manage_users').
-     * @return bool True if the user has the permission, false otherwise.
+     * @return bool True if the user has the permission through any of their roles, false otherwise.
      */
     public static function hasPermission($permissionName) {
         self::ensureSessionStarted();
-        if (!self::isLoggedIn() || !isset($_SESSION['role_id'])) {
-            // error_log("AuthSession::hasPermission - User not logged in or role_id not set in session.");
+        if (!self::isLoggedIn() || !isset($_SESSION['user_roles']) || empty($_SESSION['user_roles'])) {
+            // error_log("AuthSession::hasPermission - User not logged in or user_roles not set/empty in session.");
             return false;
         }
 
-        $roleId = $_SESSION['role_id'];
+        $userRoles = $_SESSION['user_roles']; // Array of role objects {id, nom}
 
         // Static variable to cache the model instance
         static $rolePermissionModel = null;
@@ -106,36 +117,56 @@ class AuthSession {
             if (!class_exists('RolePermission_model')) {
                  // Try to load Model base class first if not already loaded by autoloader
                 if (!class_exists('Model') && file_exists(__DIR__ . '/Model.php')) {
-                    require_once __DIR__ . '/Model.php';
+                    require_once __DIR__ . '/Model.php'; // Base Model for PDO
                 }
-                if (file_exists(__DIR__ . '/../models/RolePermission_model.php')) {
-                    require_once __DIR__ . '/../models/RolePermission_model.php';
+                $modelPath = __DIR__ . '/../models/RolePermission_model.php';
+                if (file_exists($modelPath)) {
+                    require_once $modelPath;
                 } else {
-                    // error_log("AuthSession::hasPermission - RolePermission_model file not found.");
-                    return false; // Model file not found
+                    // error_log("AuthSession::hasPermission - RolePermission_model file not found at {$modelPath}.");
+                    return false;
                 }
             }
 
             if (!class_exists('RolePermission_model')) {
                 // error_log("AuthSession::hasPermission - RolePermission_model class does not exist even after attempting load.");
-                return false; // Class still doesn't exist
+                return false;
             }
 
             try {
-                $rolePermissionModel = new RolePermission_model();
+                // Check if $rolePermissionModel is already an instance of RolePermission_model
+                // This check is actually redundant due to the outer `if ($rolePermissionModel === null)`
+                // but kept for clarity during potential refactoring.
+                if (!($rolePermissionModel instanceof RolePermission_model)) {
+                     $rolePermissionModel = new RolePermission_model();
+                }
             } catch (PDOException $e) {
                 // error_log("AuthSession::hasPermission - DB Connection failed for RolePermission_model: " . $e->getMessage());
-                return false; // DB connection failed
+                return false;
             } catch (Exception $e) {
                 // error_log("AuthSession::hasPermission - Error instantiating RolePermission_model: " . $e->getMessage());
                 return false;
             }
         }
 
-        try {
-            return $rolePermissionModel->hasPermission($roleId, $permissionName);
-        } catch (Exception $e) {
-            // error_log("AuthSession::hasPermission - Error during hasPermission check: " . $e->getMessage());
+        // Iterate through each of the user's roles and check for the permission
+        foreach ($userRoles as $role) {
+            if (isset($role->id)) { // Ensure role object has an id
+                try {
+                    if ($rolePermissionModel->hasPermission($role->id, $permissionName)) {
+                        return true; // Permission found in one of the roles
+                    }
+                } catch (Exception $e) {
+                    // error_log("AuthSession::hasPermission - Error during hasPermission check for role ID {$role->id}: " . $e->getMessage());
+                    // Continue checking other roles
+                }
+            }
+        }
+
+        return false; // Permission not found in any of the user's roles
+    }
+
+    // Flash message methods (can also be part of this class for session-related utilities)
             return false;
         }
     }

@@ -36,16 +36,26 @@ class AuthController extends Controller {
                 $_SESSION['user_id'] = $user->id;
                 $_SESSION['user_nom'] = $user->nom;
                 $_SESSION['user_email'] = $user->email;
-                $_SESSION['role_id'] = $user->role_id;
+                // $_SESSION['role_id'] = $user->role_id; // Deprecated: role_id removed from utilisateurs
                 $_SESSION['lang'] = $user->langue_preferee ?? CURRENT_LANG; // Use user's pref, fallback to current
 
-                // Fetch role name
-                if ($user->role_id) {
-                    $role = $this->roleModel->read($user->role_id);
-                    $_SESSION['role_nom'] = $role ? $role->nom : 'unknown_role';
-                } else {
-                    $_SESSION['role_nom'] = 'guest'; // Or some default if role_id can be null
+                // Fetch all roles for the user using AccreditationModel (via UtilisateurModel)
+                $userRoles = $this->utilisateurModel->getRoles($user->id); // Returns array of role objects {id, nom}
+
+                $_SESSION['user_roles'] = $userRoles; // Array of role objects {id, nom}
+
+                // For convenience, also store an array of just role names
+                $roleNames = [];
+                foreach ($userRoles as $role) {
+                    $roleNames[] = $role->nom;
                 }
+                $_SESSION['user_role_names'] = $roleNames;
+
+                // Set a "primary" role if needed, e.g., the first one or a specific one like 'admin' if present.
+                // For now, AuthSession::hasRole will check against the array of names.
+                // Let's remove the single 'role_id' and 'role_nom' from session to avoid confusion.
+                unset($_SESSION['role_id']);
+                unset($_SESSION['role_nom']);
 
                 // Update CURRENT_LANG if user preference is different and valid
                 if (isset($_SESSION['lang']) && $_SESSION['lang'] !== CURRENT_LANG) {
