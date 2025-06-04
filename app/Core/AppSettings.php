@@ -98,6 +98,27 @@ class AppSettings {
         return self::$generalSettings->nom_application ?? (defined('SITE_NAME') ? SITE_NAME : 'School Application');
     }
 
+    /**
+     * Generic getter for a general setting.
+     * @param string $key The database column name for the setting.
+     * @param mixed $default Default value to return if key not found.
+     * @return mixed The setting value or default.
+     */
+    public static function getGeneralSetting($key, $default = null) {
+        self::loadGeneralSettings();
+        return self::$generalSettings->$key ?? $default;
+    }
+
+    // Specific getters for formats (examples)
+    public static function getDateFormat($default = 'Y-m-d') {
+        return self::getGeneralSetting('format_date', $default);
+    }
+
+    public static function getTimeFormat($default = 'H:i:s') {
+        return self::getGeneralSetting('format_heure', $default);
+    }
+
+
     // Method to clear cached settings, e.g., after an update in admin panel
     public static function clearCachedSettings() {
         self::$schoolSettings = null;

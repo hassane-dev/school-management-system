@@ -40,6 +40,41 @@ if (!function_exists('get_application_name')) {
     function get_application_name(){ return AppSettings::getApplicationName(); }
 }
 
+if (!function_exists('get_setting')) {
+    /**
+     * Gets a specific general setting value using AppSettings.
+     * This is a generic getter; specific getters in AppSettings are preferred for known settings.
+     * @param string $key The setting key (maps to property name in parametres_generaux).
+     * @param mixed $default Default value if setting not found.
+     * @return mixed The setting value or default.
+     */
+    function get_setting($key, $default = null) {
+        // This requires AppSettings to have a generic getter or specific ones.
+        // For now, let's assume AppSettings might have specific getters like getDateFormat, getTimeFormat
+        // or a generic one like AppSettings::getGeneralSetting('format_date');
+        // Adding specific known ones for now:
+        if ($key === 'format_date') {
+            // Need to ensure AppSettings can provide this, e.g. AppSettings::getDateFormat()
+            // For now, as a placeholder until AppSettings is expanded or used directly:
+            return AppSettings::getGeneralSetting('format_date') ?? (defined('DEFAULT_DATE_FORMAT') ? DEFAULT_DATE_FORMAT : 'Y-m-d');
+        }
+        if ($key === 'format_heure') {
+            return AppSettings::getGeneralSetting('format_heure') ?? (defined('DEFAULT_TIME_FORMAT') ? DEFAULT_TIME_FORMAT : 'H:i:s');
+        }
+        // Fallback for other keys - this generic getter isn't fully implemented in AppSettings yet
+        // return AppSettings::getGeneralSetting($key) ?? $default;
+        return $default; // Placeholder
+    }
+}
+// Adding a more direct way to get general settings for now in AppSettings
+// AppSettings would need:
+// public static function getGeneralSetting($key, $default = null) {
+//     self::loadGeneralSettings(); // Ensure general settings are loaded
+//     return self::$generalSettings->$key ?? $default;
+// }
+// And this needs to be added to AppSettings.php
+
+
 // --- URL & Redirection Helper ---
 if (!function_exists('redirectTo')) {
     /**
