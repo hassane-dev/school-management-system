@@ -2,36 +2,19 @@
 namespace App\Controllers\Admin;
 
 use App\Core\Controller;
-// use App\Core\AuthSession; // Uncomment when AuthSession is integrated for ACL
 use App\Core\I18n;     // For translating flash messages
+use App\Core\Auth;      // For ACL
 
 class ParametresGenerauxController extends Controller {
     private $parametresModel;
 
     public function __construct() {
-        // Basic ACL placeholder - to be replaced by Sprint 3's role/permission system.
-        // For now, we assume the router or a global check might protect '/admin/*' routes.
-        // Example of how it might look with AuthSession:
-        /*
-        if (!class_exists('App\Core\AuthSession')) {
-            // Fallback or error if AuthSession isn't loaded
-            die("AuthSession class not found. Critical for security.");
-        }
-        if (!\App\Core\AuthSession::isLoggedIn()) {
-            // \App\Core\AuthSession::setFlash(I18n::translate('global.login_required'), 'warning');
-            // redirectTo('/auth/login'); // Assuming redirectTo helper exists
-            $_SESSION['flash_message'] = ['text' => I18n::translate('global.login_required'), 'type' => 'warning'];
-            header("Location: " . URL_ROOT . "/auth/login");
-            exit;
-        }
-        if (!\App\Core\AuthSession::hasRole(['admin', 'super_admin'])) {
-            // \App\Core\AuthSession::setFlash(I18n::translate('global.access_denied_admin_area'), 'danger');
-            // redirectTo('/dashboard');
-            $_SESSION['flash_message'] = ['text' => I18n::translate('global.access_denied_admin_area'), 'type' => 'danger'];
-            header("Location: " . URL_ROOT . "/dashboard"); // Or appropriate redirect
-            exit;
-        }
-        */
+        // Router already protects /admin/* path.
+        // Specific permissions will be checked in methods like update().
+        // Viewing settings (index) might be allowed for more roles if granular view permissions are added later.
+        // For now, if a user can access admin, they can view this page.
+        // If 'view_general_settings' permission was defined and desired:
+        // Auth::requirePermission('view_general_settings'); // Would apply to all methods if in constructor
 
         $this->parametresModel = $this->model('ParametresGenerauxModel');
         if (!$this->parametresModel) {
@@ -58,6 +41,8 @@ class ParametresGenerauxController extends Controller {
     }
 
     public function update() {
+        Auth::requirePermission('manage_general_settings'); // Protect the update action
+
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Sanitize POST data (basic example)
             // A more robust sanitization/validation library would be better.

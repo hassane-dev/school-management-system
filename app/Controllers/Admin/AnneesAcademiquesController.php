@@ -3,21 +3,19 @@ namespace App\Controllers\Admin;
 
 use App\Core\Controller;
 use App\Core\I18n; // Required for translations
+use App\Core\Auth; // For ACL
 
 class AnneesAcademiquesController extends Controller {
     private $anneeModel;
 
     public function __construct() {
-        // Basic ACL placeholder
-        // if (!\App\Core\AuthSession::isLoggedIn() || !\App\Core\AuthSession::hasRole(['admin', 'super_admin'])) {
-        //     $_SESSION['flash_message'] = ['text' => I18n::translate('global.access_denied_admin_area'), 'type' => 'danger'];
-        //     header("Location: " . URL_ROOT . "/auth/login"); // Or dashboard
-        //     exit;
-        // }
+        // General check for admin area access is handled by Router or a base AdminController if implemented.
+        // Specific permissions are checked per method.
         $this->anneeModel = $this->model('AnneeAcademiqueModel');
     }
 
     public function index() {
+        Auth::requirePermission('view_academic_years');
         $annees = $this->anneeModel->getAll();
         $activeYear = $this->anneeModel->getActiveYear();
         $data = [
@@ -29,6 +27,7 @@ class AnneesAcademiquesController extends Controller {
     }
 
     public function add() {
+        Auth::requirePermission('create_academic_year');
         $data_form = ['libelle' => '', 'date_debut' => '', 'date_fin' => '', 'active' => 0, 'errors' => []];
 
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -83,6 +82,7 @@ class AnneesAcademiquesController extends Controller {
     }
 
     public function edit($id) {
+        Auth::requirePermission('edit_academic_year');
         $annee = $this->anneeModel->getById($id);
         if (!$annee) {
             $_SESSION['flash_message'] = ['text' => I18n::translate('aa_not_found_msg', 'Academic year not found.'), 'type' => 'warning'];
@@ -143,30 +143,40 @@ class AnneesAcademiquesController extends Controller {
 
     public function delete($id) {
         // Recommended: Use POST for delete actions. For GET, ensure CSRF token or at least a clear confirmation step.
-        // This example assumes a basic GET with JS confirmation on client-side.
-        // A more robust way: Show a confirmation page before actual deletion.
+        // This example assumes a basic GET with JS confirmation on client-side FOR THE VIEW's LINK.
+        // However, the actual deletion should ideally be POST.
+        // For now, let's assume the form in the view POSTs here or a GET with CSRF is used.
+        // The prompt showed a POST form in the view, which is good.
+        Auth::requirePermission('delete_academic_year');
 
-        $annee = $this->anneeModel->getById($id);
-        if (!$annee) {
-            $_SESSION['flash_message'] = ['text' => I18n::translate('aa_not_found_msg', 'Academic year not found.'), 'type' => 'danger'];
-        } else if ($annee->active) {
-            $_SESSION['flash_message'] = ['text' => I18n::translate('aa_delete_error_active_msg', 'Cannot delete an active academic year. Please deactivate it first.'), 'type' => 'danger'];
-        } else {
-            $deleteResult = $this->anneeModel->delete($id);
-            if ($deleteResult === 'error_linked') {
-                 $_SESSION['flash_message'] = ['text' => I18n::translate('aa_delete_error_linked_msg', 'Cannot delete this academic year as it is linked to other records.'), 'type' => 'danger'];
-            } elseif ($deleteResult) {
-                $_SESSION['flash_message'] = ['text' => I18n::translate('aa_delete_success_msg', 'Academic year deleted successfully.'), 'type' => 'success'];
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') { // Expecting POST for deletion
+            $annee = $this->anneeModel->getById($id);
+            if (!$annee) {
+                $_SESSION['flash_message'] = ['text' => I18n::translate('aa_not_found_msg', 'Academic year not found.'), 'type' => 'danger'];
+            } else if ($annee->active) {
+                $_SESSION['flash_message'] = ['text' => I18n::translate('aa_delete_error_active_msg', 'Cannot delete an active academic year. Please deactivate it first.'), 'type' => 'danger'];
             } else {
-                $_SESSION['flash_message'] = ['text' => I18n::translate('aa_delete_error_msg', 'Failed to delete academic year.'), 'type' => 'danger'];
+                $deleteResult = $this->anneeModel->delete($id);
+                if ($deleteResult === 'error_linked') {
+                    $_SESSION['flash_message'] = ['text' => I18n::translate('aa_delete_error_linked_msg', 'Cannot delete this academic year as it is linked to other records.'), 'type' => 'danger'];
+                } elseif ($deleteResult) {
+                    $_SESSION['flash_message'] = ['text' => I18n::translate('aa_delete_success_msg', 'Academic year deleted successfully.'), 'type' => 'success'];
+                } else {
+                    $_SESSION['flash_message'] = ['text' => I18n::translate('aa_delete_error_msg', 'Failed to delete academic year.'), 'type' => 'danger'];
+                }
             }
+        } else {
+             $_SESSION['flash_message'] = ['text' => I18n::translate('global.invalid_request_method'), 'type' => 'warning'];
         }
         header("Location: " . URL_ROOT . "/admin/anneesacademiques");
         exit;
     }
 
     public function activate($id) {
+        Auth::requirePermission('activate_academic_year');
         // Recommended: Use POST for actions that change state.
+        // For simplicity with links in views, GET is often used, but needs CSRF.
+        // Let's assume for now it can be GET for simplicity of current structure.
         if ($this->anneeModel->activate($id)) {
             $_SESSION['flash_message'] = ['text' => I18n::translate('aa_activate_success_msg', 'Academic year activated successfully.'), 'type' => 'success'];
         } else {

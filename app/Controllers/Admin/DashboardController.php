@@ -3,17 +3,15 @@ namespace App\Controllers\Admin;
 
 use App\Core\Controller;
 use App\Core\I18n; // For translations
+use App\Core\Auth;  // For ACL
 
 class DashboardController extends Controller {
 
     public function __construct() {
-        // Basic ACL placeholder - router should protect /admin paths
-        // Actual role/permission check should be here using AuthSession
-        // if (!\App\Core\AuthSession::isLoggedIn() || !\App\Core\AuthSession::hasRole(['admin', 'super_admin', 'manager'])) { // Example roles
-        //     $_SESSION['flash_message'] = ['text' => I18n::translate('global.access_denied_admin_area'), 'type' => 'danger'];
-        //     header("Location: " . URL_ROOT . "/auth/login");
-        //     exit;
-        // }
+        // ACL: User must be logged in and have permission to view the admin dashboard.
+        // The router should already protect /admin paths for general login.
+        // This adds a specific permission check for this controller.
+        Auth::requirePermission('view_admin_dashboard');
     }
 
     public function index() {

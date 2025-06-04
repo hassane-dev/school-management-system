@@ -3,17 +3,17 @@ namespace App\Controllers\Admin;
 
 use App\Core\Controller;
 use App\Core\I18n;
+use App\Core\Auth; // For ACL
 
 class ParametresEcoleController extends Controller {
     private $paramsEcoleModel;
 
     public function __construct() {
-        // ACL placeholder - router should protect /admin paths
-        // if (!\App\Core\AuthSession::isLoggedIn() || !\App\Core\AuthSession::hasRole(['admin', 'super_admin'])) {
-        //     $_SESSION['flash_message'] = ['text' => I18n::translate('global.access_denied_admin_area'), 'type' => 'danger'];
-        //     header("Location: " . URL_ROOT . "/auth/login");
-        //     exit;
-        // }
+        // Router already protects /admin/* path.
+        // Specific permissions will be checked in methods like update().
+        // If 'view_school_settings' permission was defined:
+        // Auth::requirePermission('view_school_settings');
+
         $this->paramsEcoleModel = $this->model('ParametresEcoleModel');
         if (!$this->paramsEcoleModel) {
             die("Error loading ParametresEcoleModel.");
@@ -41,6 +41,8 @@ class ParametresEcoleController extends Controller {
     }
 
     public function update() {
+        Auth::requirePermission('manage_school_settings'); // Protect the update action
+
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Sanitize most text inputs
             $sanitizedPost = [];
