@@ -39,4 +39,27 @@ function __($key, $default = null) {
     return $default !== null ? $default : $key; // Return default value if provided, else the key
 }
 
+
+if (!function_exists('redirectTo')) {
+    function redirectTo($path) {
+        // Ensure path starts with a slash if it's meant to be from BASE_URL root,
+        // or handle it as relative if not. For consistency, paths from root are better.
+        if (strpos($path, '/') !== 0) {
+            $path = '/' . $path;
+        }
+
+        // BASE_URL should be defined in public/index.php
+        if (!defined('BASE_URL')) {
+            // Fallback BASE_URL definition (less ideal, should be set in index.php)
+            $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+            $host = $_SERVER['HTTP_HOST'];
+            $scriptName = str_replace('/index.php', '', $_SERVER['SCRIPT_NAME']);
+            $scriptName = $scriptName === '' ? '/' : $scriptName; // Handle root access
+            define('BASE_URL', rtrim($protocol . $host . $scriptName, '/'));
+        }
+        header("Location: " . BASE_URL . $path);
+        exit;
+    }
+}
+
 ?>

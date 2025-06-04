@@ -36,4 +36,9 @@ if (file_exists('../app/core/helpers.php')) {
     require_once '../app/core/helpers.php';
 }
 
+// Load AuthSession class for ACL and session management
+if (file_exists('../app/core/AuthSession.php')) {
+    require_once '../app/core/AuthSession.php';
+}
+
 ?>

@@ -1,5 +1,15 @@
 <?php
 
+// Define BASE_URL (Example: http://localhost/yourproject/public)
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+$host = $_SERVER['HTTP_HOST'];
+// Adjust SCRIPT_NAME to get the correct public path
+$scriptName = str_replace('/index.php', '', $_SERVER['SCRIPT_NAME']);
+// Ensure scriptName is not empty if app is in web root and index.php is accessed directly
+$scriptName = $scriptName === '' ? '/' : $scriptName;
+define('BASE_URL', rtrim($protocol . $host . $scriptName, '/'));
+
+
 // 1. Start session
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
