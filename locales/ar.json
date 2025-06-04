@@ -1,0 +1,15 @@
+{
+    "site_title": "إدارة مدرسية معيارية",
+    "welcome_message": "مرحباً بكم في منصتنا!",
+    "language_selector_label": "اللغة:",
+    "current_language_is": "اللغة الحالية هي العربية.",
+    "go_to_about": "معلومات عنا",
+    "about_us_title": "من نحن",
+    "about_us_content": "هذه هي صفحة 'من نحن' توضح تكامل i18n.",
+    "form_label_name": "الاسم",
+    "form_label_email": "البريد الإلكتروني",
+    "form_label_message": "الرسالة",
+    "form_button_submit": "إرسال",
+    "form_submit_success": "تم إرسال النموذج بنجاح!",
+    "go_back_home": "العودة إلى الرئيسية"
+}

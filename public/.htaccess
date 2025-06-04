@@ -1,6 +1,32 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
+
+  # Redirect Trailing Slashes If Not A Folder...
+  # Ensures that /controller/method/ always goes to /controller/method
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_URI} (.+)/$
+  RewriteRule ^ %1 [L,R=301]
+
+  # Send Requests To Front Controller (index.php)
+  # if the request is not for an existing file or directory
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule ^(.*)$ index.php?url=$1 [L,QSA]
 </IfModule>
+
+# Deny access to .htaccess itself
+<Files .htaccess>
+  Require all denied
+</Files>
+
+# Disable directory browsing for security
+Options -Indexes
+
+# Basic security headers (consider setting these in PHP for more control or via server config)
+# <IfModule mod_headers.c>
+#   Header set X-Content-Type-Options "nosniff"
+#   Header set X-Frame-Options "SAMEORIGIN"
+#   Header set X-XSS-Protection "1; mode=block"
+#   # Content-Security-Policy needs careful configuration
+#   # Header set Content-Security-Policy "default-src 'self'; script-src 'self' https://code.jquery.com https://stackpath.bootstrapcdn.com; style-src 'self' https://stackpath.bootstrapcdn.com;"
+# </IfModule>

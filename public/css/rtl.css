@@ -1,0 +1,77 @@
+body[dir="rtl"] {
+    text-align: right;
+}
+
+body[dir="rtl"] header .navbar-nav {
+    padding-right: 0; /* Reset padding for RTL */
+}
+
+body[dir="rtl"] header .navbar-nav .nav-item {
+    margin-left: 0;
+    margin-right: 15px; /* Adjust margin for RTL */
+}
+
+body[dir="rtl"] header form {
+    margin-left: 0;
+    margin-right: 15px; /* Adjust margin for RTL */
+}
+
+body[dir="rtl"] header form label {
+    margin-left: 5px; /* Adjust margin for RTL */
+    margin-right: 0;
+}
+
+body[dir="rtl"] .ml-auto {
+    margin-left: 0 !important;
+    margin-right: auto !important;
+}
+
+body[dir="rtl"] .mr-2 {
+    margin-right: 0 !important;
+    margin-left: 0.5rem !important;
+}
+
+/* Adjust table text alignment for RTL */
+body[dir="rtl"] th,
+body[dir="rtl"] td {
+    text-align: right;
+}
+
+/* Adjust form elements if necessary, e.g., float labels to the right */
+body[dir="rtl"] label {
+    /* text-align: right; */ /* Already handled by body text-align */
+}
+body[dir="rtl"] .form-control {
+    /* text-align: right; */ /* Input text direction is usually handled by browser based on dir attribute */
+}
+
+/* If using Bootstrap or similar, it might have its own RTL support that's more comprehensive */
+/* This is a very basic RTL stylesheet. */
+/* For example, float properties, text-align, padding, margin might need more specific adjustments */
+/* depending on the complexity of your layout and components. */
+
+/* Example for .jumbotron text alignment */
+body[dir="rtl"] .jumbotron {
+    text-align: right;
+}
+
+/* Ensure the form elements within the language selector also align correctly */
+body[dir="rtl"] header .navbar .ml-auto form {
+    /* If the form itself needs to be on the left in RTL for some reason, adjust here */
+    /* But usually, ml-auto becomes mr-auto in RTL for Bootstrap-like behavior */
+}
+
+/* Adjust action buttons in tables if they use floats or specific margins */
+body[dir="rtl"] .action-buttons a,
+body[dir="rtl"] .action-buttons form {
+    margin-left: 5px; /* Add margin to the left instead of right */
+    margin-right: 0;
+}
+
+/* Specific for the language selector form to ensure it's not pushed too far */
+body[dir="rtl"] header .navbar .ml-auto {
+    margin-right: 0 !important; /* Override if it was causing issues */
+}
+body[dir="rtl"] header .navbar .ml-auto form {
+    /* No specific change needed if it's part of the flex ml-auto adjusted container */
+}
