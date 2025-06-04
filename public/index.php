@@ -1,4 +1,10 @@
 <?php
+// Define File System Path to public folder root
+// This is useful for file operations within controllers/models that need absolute paths to public assets.
+if (!defined('FCPATH')) {
+    define('FCPATH', __DIR__ . DIRECTORY_SEPARATOR);
+}
+
 // Start session if needed later (good to have early)
 // Ensures session is available for flash messages, login status, etc.
 if (session_status() == PHP_SESSION_NONE) {

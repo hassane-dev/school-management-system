@@ -2,101 +2,98 @@
 namespace App\Core;
 
 // Ensure APP_ROOT is available (defined in config.php)
-// No direct dependencies for Router itself, but controllers it loads will need it.
 
 class Router {
-    protected $currentControllerName = 'HomeController'; // Default controller class name (short name)
+    protected $currentControllerName = 'HomeController'; // Default controller class name (short name, e.g. 'Home')
+    protected $currentControllerNamespace = 'App\\Controllers\\'; // Default namespace
     protected $currentMethodName = 'index';
     protected $params = [];
-
     protected $currentControllerInstance;
 
     public function __construct() {
         $url = $this->getUrl();
 
-        // Look for controller in first part of URL
-        if (isset($url[0]) && !empty($url[0])) {
-            $controllerCandidate = ucwords(strtolower($url[0])) . 'Controller';
-            $controllerFile = APP_ROOT . '/Controllers/' . $controllerCandidate . '.php';
+        // Default controller path and namespace
+        $controllerNameCandidate = $this->currentControllerName;
+        $namespaceCandidate = $this->currentControllerNamespace;
+        $controllerFileCandidate = APP_ROOT . '/Controllers/' . $controllerNameCandidate . '.php';
 
-            // Check for controllers in Admin subdirectory
-            // e.g., if url is admin/users, $url[0] = 'admin', $url[1] = 'users'
-            if (strtolower($url[0]) === 'admin' && isset($url[1]) && !empty($url[1])) {
-                $adminControllerCandidate = ucwords(strtolower($url[1])) . 'Controller';
-                $adminControllerFile = APP_ROOT . '/Controllers/Admin/' . $adminControllerCandidate . '.php';
-                if (file_exists($adminControllerFile)) {
-                    $this->currentControllerName = "App\\Controllers\\Admin\\" . $adminControllerCandidate;
-                    unset($url[0]); // Consumed 'admin'
-                    unset($url[1]); // Consumed controller name
-                } elseif (file_exists($controllerFile)) {
-                    // Fallback: maybe there's an AdminController at top level? Less likely with this structure.
-                    // Or if the admin part is not a directory but part of controller name e.g. AdminUsersController
-                    // This part needs a clear convention. For now, admin/ControllerName is the primary check.
-                     $this->currentControllerName = "App\\Controllers\\" . $controllerCandidate;
-                     unset($url[0]);
-                }
-            } elseif (file_exists($controllerFile)) {
-                 $this->currentControllerName = "App\\Controllers\\" . $controllerCandidate;
-                 unset($url[0]);
+        // Check for admin routes first: e.g., /admin/controller/method/params
+        if (isset($url[0]) && strtolower($url[0]) === 'admin') {
+            if (isset($url[1]) && !empty($url[1])) {
+                // This is an admin controller
+                $controllerNameCandidate = ucwords(strtolower($url[1])) . 'Controller';
+                $namespaceCandidate = 'App\\Controllers\\Admin\\';
+                $controllerFileCandidate = APP_ROOT . '/Controllers/Admin/' . $controllerNameCandidate . '.php';
+                unset($url[0]); // Consumed 'admin'
+                unset($url[1]); // Consumed controller name part
             } else {
-                 // Default to HomeController if specified controller not found, or handle 404
-                 $this->currentControllerName = "App\\Controllers\\HomeController";
-                 // Optionally, log that the requested controller $url[0] was not found
-                 // and we are defaulting or preparing for a 404.
-                 // For now, if $url[0] is set but controller not found, it will try to load HomeController
-                 // and if the method from $url[1] is not in HomeController, it will be a method not found.
-                 // A dedicated 404 controller would be better.
+                // URL is just '/admin' or '/admin/' - map to a default admin controller/method if desired
+                // For example, an AdminDashboardController
+                $controllerNameCandidate = 'AdminDashboardController'; // Example default admin controller
+                $namespaceCandidate = 'App\\Controllers\\Admin\\';
+                $controllerFileCandidate = APP_ROOT . '/Controllers/Admin/' . $controllerNameCandidate . '.php';
+                unset($url[0]); // Consumed 'admin'
+                // Method will default to 'index'
             }
-        } else {
-            // No controller specified in URL, use default HomeController
-            $this->currentControllerName = "App\\Controllers\\HomeController";
+        } elseif (isset($url[0]) && !empty($url[0])) {
+            // Non-admin route
+            $controllerNameCandidate = ucwords(strtolower($url[0])) . 'Controller';
+            $namespaceCandidate = 'App\\Controllers\\';
+            $controllerFileCandidate = APP_ROOT . '/Controllers/' . $controllerNameCandidate . '.php';
+            unset($url[0]); // Consumed controller name part
         }
+        // If $url[0] was not set or empty, it defaults to HomeController
 
+        // Check if the determined controller file exists
+        if (file_exists($controllerFileCandidate)) {
+            $this->currentControllerName = $namespaceCandidate . $controllerNameCandidate;
+        } else {
+            // Fallback to a generic 404 or default page if controller file not found
+            // For now, if a specific controller was requested but not found, show error.
+            // If no controller was in URL, it defaults to HomeController which should exist.
+            if ((isset($_GET['url']) && !empty($_GET['url'])) && $controllerFileCandidate !== APP_ROOT . '/Controllers/HomeController.php') {
+                 error_log("Router Error: Controller file " . $controllerFileCandidate . " not found.");
+                 // TODO: Implement a proper 404 handler (e.g., load a NotFoundController)
+                 die("Error 404: Page not found (controller file missing). Requested: " . htmlspecialchars($_GET['url']));
+            }
+            // Otherwise, it's already set to default HomeController, let it proceed.
+            $this->currentControllerName = 'App\\Controllers\\HomeController'; // Ensure default
+        }
 
         // Instantiate controller
         if (class_exists($this->currentControllerName)) {
             $this->currentControllerInstance = new $this->currentControllerName();
         } else {
-            // Handle controller not found error
-            error_log("Router Error: Controller class " . $this->currentControllerName . " not found.");
-            // TODO: Implement a proper 404 handler
-            die("Error: Controller class " . $this->currentControllerName . " not found. Check class name and namespace.");
+            error_log("Router Error: Controller class " . $this->currentControllerName . " not found, though file might exist or defaulted.");
+            die("Error 404: Page not found (controller class invalid). Class: " . $this->currentControllerName);
         }
 
-        // Look for method in the next part of URL (if controller was resolved from $url[0] or $url[1] for admin)
-        $methodUrlIndex = isset($url[0]) && strtolower($url[0]) === 'admin' ? 1 : 0;
-        // This logic is a bit complex due to admin path. Simpler if getUrl shifts array.
-        // Let's re-evaluate using the current state of $url after controller processing.
-
-        $methodCandidate = $this->currentMethodName; // Default to 'index'
-        if (!empty($url) && isset(current($url))) { // Check if there's a next segment for method
-            $potentialMethod = current($url); // Use current() as $url might have been modified
-             if (method_exists($this->currentControllerInstance, $potentialMethod)) {
-                $this->currentMethodName = $potentialMethod;
-                unset($url[key($url)]); // Remove the method part from $url
+        // Look for method in the next part of URL
+        if (isset($url[0]) && !empty($url[0])) { // After controller parts are unset, $url[0] is method
+            $methodCandidate = $url[0];
+            if (method_exists($this->currentControllerInstance, $methodCandidate)) {
+                $this->currentMethodName = $methodCandidate;
+                unset($url[0]);
             } else {
                 // Method not found in specified controller.
-                // Log this, and potentially fall back to index or show 404.
-                // For now, if method specified but not found, it will error later in call_user_func_array
-                // unless we explicitly handle it.
-                // It's often better to let it proceed to call_user_func_array and have it fail there if method truly doesn't exist.
-                // Or, explicitly check and redirect to a 404 page or method.
-                error_log("Router Error: Method " . $potentialMethod . " not found in controller " . $this->currentControllerName);
-                // For now, let it try to call. A robust app would have a 404 here.
+                error_log("Router Error: Method " . $methodCandidate . " not found in controller " . $this->currentControllerName);
+                // TODO: Implement a proper 404 handler for method not found
+                die("Error 404: Action not found in controller. Controller: " . $this->currentControllerName . ", Method: " . $methodCandidate);
             }
         }
-
+        // If $url[0] was not set, method defaults to 'index'
 
         // Get params - remaining parts of URL
         $this->params = $url ? array_values($url) : [];
 
         // Call the controller method with params
-        if (method_exists($this->currentControllerInstance, $this->currentMethodName)) {
+        // Ensure method still exists (could be private, etc., though method_exists checks public)
+        if (is_callable([$this->currentControllerInstance, $this->currentMethodName])) {
             call_user_func_array([$this->currentControllerInstance, $this->currentMethodName], $this->params);
         } else {
-            error_log("Router Error: Method " . $this->currentMethodName . " does not exist in controller " . get_class($this->currentControllerInstance));
-            // TODO: Implement a proper 404 handler for method not found
-            die("Error: Method " . $this->currentMethodName . " not found in controller " . get_class($this->currentControllerInstance) . ".");
+             error_log("Router Error: Method " . $this->currentMethodName . " is not callable in controller " . get_class($this->currentControllerInstance));
+             die("Error 404: Action not callable. Controller: " . get_class($this->currentControllerInstance) . ", Method: " . $this->currentMethodName);
         }
     }
 
@@ -104,6 +101,9 @@ class Router {
         if (isset($_GET['url'])) {
             $url = rtrim($_GET['url'], '/');
             $url = filter_var($url, FILTER_SANITIZE_URL);
+            // Allow explicitly 'admin' as a segment even if other segments might be filtered for typical controller/method names
+            // This basic filter is okay for now. More complex routing might need more specific validation.
+            // $url = preg_replace('/[^a-zA-Z0-9_=\/\-]/', '', $url); // Example of stricter filtering
             $url = explode('/', $url);
             return $url;
         }

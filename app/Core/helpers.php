@@ -1,6 +1,7 @@
 <?php
 // app/Core/helpers.php
 use App\Core\I18n; // Ensures the I18n class is recognized in this namespace context.
+use App\Core\AppSettings; // For new helper functions
 
 if (!function_exists('__')) {
     /**
@@ -43,10 +44,53 @@ if (!function_exists('getLocaleDirection')) {
      *
      * @return string 'rtl' if current language is Arabic, otherwise 'ltr'.
      */
-    function getLocaleDirection() {
+    function get_app_direction() { // Renamed from getLocaleDirection for clarity
         return (I18n::getCurrentLang() === 'ar') ? 'rtl' : 'ltr';
     }
 }
+
+// --- AppSettings Helper Functions ---
+
+if (!function_exists('get_school_type')) {
+    /**
+     * Gets the type of the school (e.g., 'public', 'prive').
+     * @return string|null School type or null if not set.
+     */
+    function get_school_type() {
+        return AppSettings::getSchoolType();
+    }
+}
+
+if (!function_exists('get_school_name')) {
+    /**
+     * Gets the name of the school. Falls back to SITE_NAME from config if not set in DB.
+     * @return string School name.
+     */
+    function get_school_name() {
+        return AppSettings::getSchoolName();
+    }
+}
+
+if (!function_exists('get_school_logo_path')) {
+    /**
+     * Gets the path to the school's logo.
+     * @return string|null Logo path or null if not set.
+     */
+    function get_school_logo_path() {
+        return AppSettings::getSchoolLogoPath();
+    }
+}
+
+if (!function_exists('get_application_name')) {
+    /**
+     * Gets the application name from general settings. Falls back to SITE_NAME.
+     * @return string Application name.
+     */
+    function get_application_name(){
+        return AppSettings::getApplicationName();
+    }
+}
+
 
 // You can add other global helper functions here as your application grows.
 ?>

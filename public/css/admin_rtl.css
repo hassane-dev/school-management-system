@@ -1,0 +1,95 @@
+body[dir="rtl"] .admin-sidebar {
+    box-shadow: -2px 0 5px rgba(0,0,0,0.1); /* Adjust shadow for RTL */
+}
+
+body[dir="rtl"] .admin-sidebar nav ul li a,
+body[dir="rtl"] .admin-sidebar nav ul li strong {
+    text-align: right;
+}
+
+body[dir="rtl"] .admin-sidebar nav ul li a i, /* If using icons */
+body[dir="rtl"] .admin-sidebar nav ul li strong i {
+    margin-left: 8px; /* Space icon to the right of text */
+    margin-right: 0;
+}
+
+
+body[dir="rtl"] .admin-header {
+    /* Text alignment might be globally set by body[dir="rtl"] */
+}
+
+body[dir="rtl"] .admin-header h2,
+body[dir="rtl"] .admin-header h3 {
+    /* text-align: right; */ /* If not inherited */
+}
+
+body[dir="rtl"] .admin-page-content {
+    /* text-align: right; */ /* If not inherited */
+}
+
+/* Forms */
+body[dir="rtl"] form label {
+    /* text-align: right; */ /* If not inherited */
+}
+body[dir="rtl"] form input[type="text"],
+body[dir="rtl"] form input[type="email"],
+body[dir="rtl"] form input[type="url"],
+body[dir="rtl"] form input[type="tel"],
+body[dir="rtl"] form input[type="date"],
+body[dir="rtl"] form input[type="password"],
+body[dir="rtl"] form select,
+body[dir="rtl"] form textarea {
+    /* text-align: right; */ /* Input text direction usually browser-handled */
+}
+body[dir="rtl"] .form-check-input { /* For checkboxes/radios if custom styled */
+    margin-left: .25rem;
+    margin-right: -1.25rem; /* Adjust based on your form layout */
+}
+body[dir="rtl"] .form-check-label {
+    padding-right: 1.5rem; /* Adjust based on your form layout */
+    padding-left: 0;
+}
+
+
+/* Tables */
+body[dir="rtl"] table th,
+body[dir="rtl"] table td {
+    text-align: right;
+}
+
+/* Action Buttons in tables */
+body[dir="rtl"] .action-buttons a,
+body[dir="rtl"] .action-buttons form {
+    margin-left: 5px;
+    margin-right: 0;
+}
+
+/* Language selector in sidebar */
+body[dir="rtl"] .admin-sidebar #lang_select_admin {
+    /* Potentially specific styles if needed */
+}
+body[dir="rtl"] .admin-sidebar form label[for="lang_select_admin"] {
+     margin-left: 5px; /* Space between label and select */
+     margin-right: 0;
+}
+
+/* Dropdown menu items */
+body[dir="rtl"] .dropdown-menu {
+    text-align: right;
+}
+/* If using Bootstrap, its RTL version would handle dropdowns more comprehensively */
+
+/* General utilities for RTL if needed */
+body[dir="rtl"] .text-left { text-align: right !important; }
+body[dir="rtl"] .text-right { text-align: left !important; }
+body[dir="rtl"] .float-left { float: right !important; }
+body[dir="rtl"] .float-right { float: left !important; }
+body[dir="rtl"] .mr-auto { margin-right: 0 !important; margin-left: auto !important; }
+body[dir="rtl"] .ml-auto { margin-left: 0 !important; margin-right: auto !important; }
+body[dir="rtl"] .dropdown-menu-right { right: auto !important; left: 0 !important; } /* For Bootstrap-like dropdowns */
+
+/* Card header and body alignment */
+body[dir="rtl"] .card-header,
+body[dir="rtl"] .card-body {
+    /* text-align: right; */ /* If not inherited */
+}
