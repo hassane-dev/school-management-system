@@ -36,5 +36,18 @@ CREATE TABLE IF NOT EXISTS `annees_academiques` (
   `active` BOOLEAN DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS `licences` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `cle_licence` VARCHAR(255) NOT NULL UNIQUE COMMENT 'License key string',
+  `duree_jours` INT NOT NULL COMMENT 'Duration in days (e.g., 90, 180, 365)',
+  `date_creation` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'When the license was generated',
+  `date_activation` DATETIME NULL COMMENT 'When the license was first activated',
+  `date_expiration` DATETIME NULL COMMENT 'Calculated: date_activation + duree_jours',
+  `hachage_machine` VARCHAR(255) NULL COMMENT 'Machine hash or identifier',
+  `est_active` BOOLEAN NOT NULL DEFAULT 0 COMMENT '0 = inactive, 1 = active',
+  `utilisee_par_instance_id` VARCHAR(255) NULL COMMENT 'Identifier for the school instance using it (e.g., UUID or domain name)',
+  `notes` TEXT NULL COMMENT 'Optional notes by SuperAdmin about this license'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Confirmation message (as a comment, actual execution message depends on SQL client)
 -- Script completed. Tables `parametres_generaux`, `parametres_ecole`, and `annees_academiques` are ready.
