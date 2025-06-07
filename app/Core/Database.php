@@ -90,5 +90,25 @@ class Database {
     public function getPdo() {
         return $this->pdo;
     }
+
+    /**
+     * Returns the SQLSTATE error code associated with the last operation on the statement handle.
+     * @return string|null SQLSTATE error code, or null if no error.
+     */
+    public function getErrorCode(){
+        return $this->stmt ? $this->stmt->errorCode() : ($this->pdo ? $this->pdo->errorCode() : null);
+    }
+
+    /**
+     * Returns extended error information associated with the last operation on the statement handle.
+     * Returns an array: [SQLSTATE error code, Driver-specific error code, Driver-specific error message].
+     * This method specifically returns the driver-specific error message.
+     * @return string|null Driver-specific error message, or null if no error.
+     */
+    public function getErrorInfo(){
+        $errorInfo = $this->stmt ? $this->stmt->errorInfo() : ($this->pdo ? $this->pdo->errorInfo() : null);
+        // Return driver-specific error message (index 2)
+        return $errorInfo[2] ?? null;
+    }
 }
 ?>
