@@ -5,10 +5,11 @@ use App\Core\Controller;
 use App\Core\Auth;
 use App\Core\I18n;
 use App\Models\EnseignementModel;
-use App\Models\UtilisateurModel; // For teachers
-use App\Models\MatiereModel;    // Formalized model
-use App\Models\ClasseModel;     // Formalized model
+use App\Models\UtilisateurModel;
+use App\Models\MatiereModel;
+use App\Models\ClasseModel;
 use App\Models\AnneeAcademiqueModel;
+use App\Models\ClasseMatiereEligibiliteModel; // New dependency
 
 class EnseignementController extends Controller {
     private $enseignementModel;
@@ -16,22 +17,23 @@ class EnseignementController extends Controller {
     private $matiereModel;
     private $classeModel;
     private $anneeModel;
+    private $classeMatiereEligibiliteModel; // New property
 
     public function __construct() {
-        // Base permission for the module is checked in each method that requires it.
+        // Base permission view_enseignements is checked in index, others in respective methods
 
         $this->enseignementModel = $this->model('EnseignementModel');
         $this->utilisateurModel = $this->model('UtilisateurModel');
         $this->matiereModel = $this->model('MatiereModel');
         $this->classeModel = $this->model('ClasseModel');
         $this->anneeModel = $this->model('AnneeAcademiqueModel');
+        $this->classeMatiereEligibiliteModel = $this->model('ClasseMatiereEligibiliteModel'); // Instantiate
     }
 
     public function index() {
         Auth::requirePermission('view_enseignements');
 
         $filters = [];
-        // Ensure keys used for filtering match what EnseignementModel->getAffectations expects (e.g., 'e.utilisateur_id')
         if (!empty($_GET['teacher_id'])) $filters['e.utilisateur_id'] = (int)$_GET['teacher_id'];
         if (!empty($_GET['class_id'])) $filters['e.classe_id'] = (int)$_GET['class_id'];
         if (!empty($_GET['year_id'])) $filters['e.annee_id'] = (int)$_GET['year_id'];
@@ -51,14 +53,24 @@ class EnseignementController extends Controller {
             'classes' => $classes,
             'academicYears' => $academicYears,
             'matieres' => $matieres,
-            'currentFilters' => $_GET // Pass actual GET params to repopulate filter form correctly
+            'currentFilters' => $_GET
         ], 'admin_default');
     }
 
-    private function getFormData() {
+    // Updated getFormData to handle selectedClasseId for pre-populating matieres
+    private function getFormData($selectedClasseId = null, $selectedMatiereId = null) {
+        $matieresForDropdown = [];
+        if ($selectedClasseId) {
+            $matieresForDropdown = $this->classeMatiereEligibiliteModel->getEligibleMatieresForClasse($selectedClasseId, true);
+        } else {
+            // Optionally load all matieres if no class is selected, or keep it empty
+            // $matieresForDropdown = $this->matiereModel->getAll([], ['orderBy' => 'nom', 'orderDir' => 'ASC']);
+        }
+
         return [
             'teachers' => $this->utilisateurModel->getAccreditedTeachers(),
-            'matieres' => $this->matiereModel->getAll([], ['orderBy' => 'nom', 'orderDir' => 'ASC']),
+            'matieres' => $matieresForDropdown, // This list is now context-dependent
+            'all_matieres_for_empty_state' => $this->matiereModel->getAll([],['orderBy' => 'nom']), // Fallback for no-JS or initial state
             'classes' => $this->classeModel->getAll([], ['orderBy' => 'nom', 'orderDir' => 'ASC']),
             'academicYears' => $this->anneeModel->getAll([], ['orderBy' => 'libelle', 'orderDir' => 'DESC'])
         ];
@@ -69,7 +81,6 @@ class EnseignementController extends Controller {
         $formData = ['utilisateur_id' => '', 'matiere_id' => '', 'classe_id' => '', 'annee_id' => '', 'errors' => []];
 
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            // Sanitize to integers as these are IDs
             $_POST_sanitized = filter_input_array(INPUT_POST, [
                 'utilisateur_id' => FILTER_SANITIZE_NUMBER_INT,
                 'matiere_id' => FILTER_SANITIZE_NUMBER_INT,
@@ -77,7 +88,7 @@ class EnseignementController extends Controller {
                 'annee_id' => FILTER_SANITIZE_NUMBER_INT,
             ]);
 
-            $formData = array_merge($formData, $_POST_sanitized); // Keep other potential POST fields if any
+            $formData = array_merge($formData, $_POST_sanitized);
 
             if (empty($formData['utilisateur_id'])) $formData['errors']['utilisateur_id'] = I18n::translate('validation.required_select', ['field' => __('enseignements_teacher', 'Teacher')]);
             if (empty($formData['matiere_id'])) $formData['errors']['matiere_id'] = I18n::translate('validation.required_select', ['field' => __('enseignements_subject', 'Subject')]);
@@ -106,7 +117,7 @@ class EnseignementController extends Controller {
             }
         }
 
-        $viewData = array_merge(['data' => $formData, 'title' => __('enseignements_title_add', 'Add New Assignment'), 'mode' => 'add'], $this->getFormData());
+        $viewData = array_merge(['data' => $formData, 'title' => __('enseignements_title_add', 'Add New Assignment'), 'mode' => 'add'], $this->getFormData($formData['classe_id'] ?? null));
         $this->view('admin/enseignements/form', $viewData, 'admin_default');
     }
 
@@ -161,7 +172,7 @@ class EnseignementController extends Controller {
             }
         }
 
-        $viewData = array_merge(['data' => $formData, 'title' => __('enseignements_title_edit', 'Edit Assignment'), 'mode' => 'edit', 'assignmentId' => $id], $this->getFormData());
+        $viewData = array_merge(['data' => $formData, 'title' => __('enseignements_title_edit', 'Edit Assignment'), 'mode' => 'edit', 'assignmentId' => $id], $this->getFormData($formData['classe_id']));
         $this->view('admin/enseignements/form', $viewData, 'admin_default');
     }
 
@@ -178,6 +189,30 @@ class EnseignementController extends Controller {
             $_SESSION['flash_message'] = ['text' => I18n::translate('global.invalid_request_method'), 'type' => 'warning'];
         }
         redirectTo('/admin/enseignements');
+    }
+
+    // New AJAX handler method
+    public function get_matieres_for_classe_ajax($classeId = 0) {
+        // Permission check for AJAX endpoint
+        if (!Auth::can('view_enseignements') && !Auth::can('create_enseignement') && !Auth::can('edit_enseignement')) {
+            header('Content-Type: application/json');
+            http_response_code(403); // Forbidden
+            echo json_encode(['error' => I18n::translate('global.access_denied_permission')]);
+            exit;
+        }
+
+        $classeId = (int)$classeId;
+        $eligibleMatieres = [];
+
+        if ($classeId > 0) {
+            $eligibleMatieres = $this->classeMatiereEligibiliteModel->getEligibleMatieresForClasse($classeId, true);
+        }
+        // No "else" needed to load all matieres; if classId is 0 or invalid, an empty array is fine.
+        // The JS will handle the "Select class first" message.
+
+        header('Content-Type: application/json');
+        echo json_encode($eligibleMatieres);
+        exit;
     }
 }
 ?>

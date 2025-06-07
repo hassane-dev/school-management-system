@@ -19,9 +19,13 @@ class MatiereModel extends Model {
             $whereClauses[] = "(nom LIKE :search OR code LIKE :search)";
             $bindings[':search'] = '%' . $filters['search'] . '%';
         }
-        if (!empty($filters['type_matiere'])) {
+        if (!empty($filters['type_matiere'])) { // Original type filter
             $whereClauses[] = "type_matiere = :type_matiere";
             $bindings[':type_matiere'] = $filters['type_matiere'];
+        }
+        if (!empty($filters['type_academique'])) { // New academic type filter
+            $whereClauses[] = "type_academique = :type_academique";
+            $bindings[':type_academique'] = $filters['type_academique'];
         }
 
         if (!empty($whereClauses)) {
@@ -31,7 +35,7 @@ class MatiereModel extends Model {
         $orderBy = $options['orderBy'] ?? 'nom';
         $orderDir = $options['orderDir'] ?? 'ASC';
         // Validate orderBy against a list of allowed columns
-        $allowedOrderBy = ['nom', 'code', 'type_matiere', 'coefficient'];
+        $allowedOrderBy = ['nom', 'code', 'type_matiere', 'type_academique', 'coefficient'];
         if (!in_array($orderBy, $allowedOrderBy)) {
             $orderBy = 'nom'; // Fallback to default
         }
@@ -63,6 +67,11 @@ class MatiereModel extends Model {
             $whereClauses[] = "type_matiere = :type_matiere";
             $bindings[':type_matiere'] = $filters['type_matiere'];
         }
+        if (!empty($filters['type_academique'])) { // New academic type filter
+            $whereClauses[] = "type_academique = :type_academique";
+            $bindings[':type_academique'] = $filters['type_academique'];
+        }
+
         if (!empty($whereClauses)) {
             $sql .= " WHERE " . implode(' AND ', $whereClauses);
         }
@@ -105,13 +114,14 @@ class MatiereModel extends Model {
     }
 
     public function create($data) {
-        $this->db->query("INSERT INTO {$this->table} (nom, code, description, coefficient, type_matiere)
-                          VALUES (:nom, :code, :description, :coefficient, :type_matiere)");
+        $this->db->query("INSERT INTO {$this->table} (nom, code, description, coefficient, type_matiere, type_academique)
+                          VALUES (:nom, :code, :description, :coefficient, :type_matiere, :type_academique)");
         $this->db->bind(':nom', $data['nom']);
         $this->db->bind(':code', $data['code'] ?? null);
         $this->db->bind(':description', $data['description'] ?? null);
-        $this->db->bind(':coefficient', $data['coefficient'] ?? 1.00, PDO::PARAM_STR); // Decimal as string
+        $this->db->bind(':coefficient', $data['coefficient'] ?? 1.00, PDO::PARAM_STR);
         $this->db->bind(':type_matiere', $data['type_matiere'] ?? null);
+        $this->db->bind(':type_academique', $data['type_academique'] ?? null); // New field
 
         try {
             if ($this->db->execute()) {
@@ -120,7 +130,7 @@ class MatiereModel extends Model {
         } catch (\PDOException $e) {
             error_log("MatiereModel::create Error: " . $e->getMessage());
             if ($this->db->getErrorCode() == '23000') {
-                $errorInfo = $this->db->getErrorInfo(); // Ensure getErrorInfo() returns the message string
+                $errorInfo = $this->db->getErrorInfo();
                 if (strpos($errorInfo ?? '', 'Duplicate entry') !== false) {
                     if (strpos($errorInfo ?? '', "'nom'") !== false) return 'duplicate_nom';
                     if (strpos($errorInfo ?? '', "'code'") !== false) return 'duplicate_code';
@@ -132,17 +142,18 @@ class MatiereModel extends Model {
 
     public function update($id, $data) {
         $this->db->query("UPDATE {$this->table} SET nom = :nom, code = :code, description = :description,
-                          coefficient = :coefficient, type_matiere = :type_matiere
+                          coefficient = :coefficient, type_matiere = :type_matiere, type_academique = :type_academique
                           WHERE id = :id");
         $this->db->bind(':id', $id, PDO::PARAM_INT);
         $this->db->bind(':nom', $data['nom']);
         $this->db->bind(':code', $data['code'] ?? null);
         $this->db->bind(':description', $data['description'] ?? null);
-        $this->db->bind(':coefficient', $data['coefficient'] ?? 1.00, PDO::PARAM_STR); // Decimal as string
+        $this->db->bind(':coefficient', $data['coefficient'] ?? 1.00, PDO::PARAM_STR);
         $this->db->bind(':type_matiere', $data['type_matiere'] ?? null);
+        $this->db->bind(':type_academique', $data['type_academique'] ?? null); // New field
 
         try {
-            return $this->db->execute(); // Returns true on success, false on failure
+            return $this->db->execute();
         } catch (\PDOException $e) {
             error_log("MatiereModel::update Error: " . $e->getMessage());
              if ($this->db->getErrorCode() == '23000') {
@@ -157,19 +168,16 @@ class MatiereModel extends Model {
     }
 
     public function delete($id) {
-        // Check if this matiere is used in 'enseignements' table
         if (class_exists('App\Models\EnseignementModel')) {
             try {
-                $enseignementModel = new \App\Models\EnseignementModel(); // Autoloader should find it
-                // Build a filter to check usage
-                $usageFilters = ['matiere_id' => $id]; // Corrected key to match typical column name
+                $enseignementModel = new \App\Models\EnseignementModel();
+                $usageFilters = ['e.matiere_id' => $id];
                 $assignments = $enseignementModel->getAffectations($usageFilters, ['limit' => 1]);
                 if (!empty($assignments)) {
-                    return 'in_use'; // Indicate it's in use
+                    return 'in_use';
                 }
             } catch (\Exception $e) {
                 error_log("MatiereModel::delete - Error checking EnseignementModel: " . $e->getMessage());
-                // Proceed with caution or return a generic error if this check is critical
             }
         } else {
             error_log("MatiereModel::delete Warning: EnseignementModel not available for 'in_use' check. Relying on DB constraints.");
@@ -182,14 +190,20 @@ class MatiereModel extends Model {
         } catch (\PDOException $e) {
             error_log("MatiereModel::delete Error: " . $e->getMessage());
              if ($this->db->getErrorCode() == '23000') {
-                return 'in_use'; // Fallback if direct DB constraint caught it
+                return 'in_use';
             }
             return false;
         }
     }
 
-    public function getDistinctTypes() {
+    public function getDistinctTypes() { // For original 'type_matiere'
         $this->db->query("SELECT DISTINCT type_matiere FROM {$this->table} WHERE type_matiere IS NOT NULL AND type_matiere != '' ORDER BY type_matiere");
+        return $this->db->resultSet();
+    }
+
+    // New method for 'type_academique'
+    public function getDistinctTypesAcademiques() {
+        $this->db->query("SELECT DISTINCT type_academique FROM {$this->table} WHERE type_academique IS NOT NULL AND type_academique != '' ORDER BY type_academique");
         return $this->db->resultSet();
     }
 }

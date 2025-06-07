@@ -1,16 +1,21 @@
 <?php
-// Expected data:
-// $data['data'] (array of form values: nom, code, description, coefficient, type_matiere, errors)
+// Expected data from MatieresController:
+// $data['data'] (array of form values: nom, code, description, coefficient, type_matiere, type_academique, errors)
 // $data['title'] (string)
 // $data['mode'] ('add' or 'edit')
 // $data['matiereId'] (int, only for 'edit' mode)
-// $data['matiereTypes'] (array of strings for type dropdown)
+// $data['matiereFunctionalTypes'] (array of strings for type_matiere dropdown)
+// $data['matiereAcademicTypes'] (array of strings for type_academique dropdown)
 
-$formData = $data['data'] ?? ['nom' => '', 'code' => '', 'description' => '', 'coefficient' => 1.00, 'type_matiere' => '', 'errors' => []];
+$formData = $data['data'] ?? ['nom' => '', 'code' => '', 'description' => '', 'coefficient' => 1.00, 'type_matiere' => '', 'type_academique' => '', 'errors' => []];
 $title = $data['title'] ?? ($data['mode'] === 'edit' ? __('matieres_title_edit_default', 'Edit Subject') : __('matieres_title_add_default', 'Add New Subject'));
 $mode = $data['mode'] ?? 'add';
 $matiereId = $data['matiereId'] ?? null;
-$matiereTypes = $data['matiereTypes'] ?? ['Fondamentale', 'Optionnelle', 'Atelier', 'Projet', 'Sportive', 'Culturelle']; // Fallback if not passed
+
+// These are the lists of available options for the dropdowns, passed from the controller
+$matiereFunctionalTypes = $data['allMatiereFunctionalTypes'] ?? $data['matiereFunctionalTypes'] ?? ['Fondamentale', 'Optionnelle', 'Atelier', 'Projet', 'Sportive', 'Culturelle'];
+$matiereAcademicTypes = $data['allMatiereAcademicTypes'] ?? $data['matiereAcademicTypes'] ?? ['Scientifique', 'Littéraire', 'Technique', 'Arts', 'Sportif', 'Professionnel', 'Général', 'Langues'];
+
 
 $action_url = ($mode === 'edit' && $matiereId) ? URL_ROOT . '/admin/matieres/edit/' . $matiereId : URL_ROOT . '/admin/matieres/add';
 ?>
@@ -49,17 +54,31 @@ $action_url = ($mode === 'edit' && $matiereId) ? URL_ROOT . '/admin/matieres/edi
                 </div>
 
                 <div class="form-group">
-                    <label for="type_matiere"><?php echo __('matieres_form_label_type', 'Subject Type'); ?>:</label>
+                    <label for="type_matiere"><?php echo __('matieres_form_label_type', 'Functional Type'); ?>:</label>
                     <select id="type_matiere" name="type_matiere" class="form-control <?php echo !empty($formData['errors']['type_matiere']) ? 'is-invalid' : ''; ?>">
-                        <option value=""><?php echo __('global_select_an_option', '-- Select a type --'); ?></option>
-                        <?php foreach($matiereTypes as $type): ?>
+                        <option value=""><?php echo __('global_select_an_option', '-- Select Functional Type --'); ?></option>
+                        <?php foreach($matiereFunctionalTypes as $type): ?>
                             <option value="<?php echo htmlspecialchars($type); ?>" <?php echo (($formData['type_matiere'] ?? '') === $type) ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars(ucfirst($type)); // Or use __("matiere_type_".$type) if types are translatable keys ?>
+                                <?php echo htmlspecialchars(ucfirst($type)); // Or use __("matiere_functional_type_".$type) if types are translatable keys ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
                      <?php if (!empty($formData['errors']['type_matiere'])): ?><div class="invalid-feedback"><?php echo htmlspecialchars($formData['errors']['type_matiere']); ?></div><?php endif; ?>
                 </div>
+
+                <div class="form-group">
+                    <label for="type_academique"><?php echo __('matieres_form_label_type_academique', 'Academic Type'); ?>:</label>
+                    <select id="type_academique" name="type_academique" class="form-control <?php echo !empty($formData['errors']['type_academique']) ? 'is-invalid' : ''; ?>">
+                        <option value=""><?php echo __('global_select_an_option', '-- Select Academic Type --'); ?></option>
+                        <?php foreach($matiereAcademicTypes as $type): ?>
+                            <option value="<?php echo htmlspecialchars($type); ?>" <?php echo (($formData['type_academique'] ?? '') === $type) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars(ucfirst($type)); // Or use __("matiere_academic_type_".$type) if types are translatable keys ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <?php if (!empty($formData['errors']['type_academique'])): ?><div class="invalid-feedback"><?php echo htmlspecialchars($formData['errors']['type_academique']); ?></div><?php endif; ?>
+                </div>
+
             </div>
         </div>
 

@@ -23,13 +23,13 @@
 
                     <li><hr></li>
                     <li><strong><?php echo __('admin_settings_group_title', 'Settings'); ?></strong></li>
-                    <?php if (Auth::can('manage_general_settings') || Auth::can('view_general_settings')): // Assuming view perm if more granular ?>
+                    <?php if (Auth::can('manage_general_settings') || (method_exists('Auth','can') && Auth::can('view_general_settings'))): // Assuming view perm if more granular ?>
                         <li><a href="<?php echo URL_ROOT; ?>/admin/parametresgeneraux"><i class="fas fa-cogs fa-fw"></i> <?php echo __('admin_nav_general_settings', 'General'); ?></a></li>
                     <?php endif; ?>
                     <?php if (Auth::can('view_academic_years')): ?>
                         <li><a href="<?php echo URL_ROOT; ?>/admin/anneesacademiques"><i class="fas fa-calendar-alt fa-fw"></i> <?php echo __('admin_nav_academic_years', 'Academic Years'); ?></a></li>
                     <?php endif; ?>
-                    <?php if (Auth::can('manage_school_settings') || Auth::can('view_school_settings')): // Assuming view perm if more granular ?>
+                    <?php if (Auth::can('manage_school_settings') || (method_exists('Auth','can') && Auth::can('view_school_settings'))): // Assuming view perm if more granular ?>
                         <li><a href="<?php echo URL_ROOT; ?>/admin/parametresecole"><i class="fas fa-school fa-fw"></i> <?php echo __('admin_nav_school_settings', 'School Info'); ?></a></li>
                     <?php endif; ?>
 
@@ -47,7 +47,7 @@
                             <li><a href="<?php echo URL_ROOT; ?>/admin/classes"><i class="fas fa-chalkboard-teacher fa-fw"></i> <?php echo __('admin_nav_classes', 'Classes'); ?></a></li>
                         <?php endif; ?>
                         <?php if (Auth::can('view_enseignements')): ?>
-                            <li><a href="<?php echo URL_ROOT; ?>/admin/enseignements"><i class="fas fa-users-class fa-fw"></i> <?php echo __('admin_nav_assignments', 'Assignments'); ?></a></li>
+                            <li><a href="<?php echo URL_ROOT; ?>/admin/enseignements"><i class="fas fa-user-graduate fa-fw"></i> <?php echo __('admin_nav_assignments', 'Teacher Assignments'); ?></a></li>
                         <?php endif; ?>
                     <?php endif; ?>
 
@@ -109,8 +109,9 @@
             </header>
             <div class="admin-page-content">
               <?php
-                if (class_exists('App\Core\AuthSession') && method_exists('App\Core\AuthSession', 'displayFlash')) {
-                    echo \App\Core\AuthSession::displayFlash();
+                // Flash message display (using Auth::displayFlash() is preferred if it exists and is robust)
+                if (class_exists('App\Core\Auth') && method_exists('App\Core\Auth', 'displayFlash')) {
+                    echo \App\Core\Auth::displayFlash(); // Assuming Auth class has a displayFlash method
                 } elseif (isset($_SESSION['flash_message'])) {
                     $flash = $_SESSION['flash_message'];
                     $alertType = is_array($flash) ? ($flash['type'] ?? 'info') : 'info';
@@ -123,8 +124,13 @@
             </div>
         </main>
     </div>
-    <?php // Global JS scripts can be loaded here if needed for admin panel ?>
-     <!-- Font Awesome for icons - if not loaded globally, or Bootstrap that includes it -->
-    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script> -->
+    <script>
+        const URL_ROOT = "<?php echo URL_ROOT; ?>";
+        // Other global JS variables can be defined here
+    </script>
+    <?php // Global JS scripts can be loaded here if needed for admin panel, e.g. Bootstrap JS for dropdowns ?>
+    <!-- <script src="https_//code.jquery.com/jquery-3.5.1.slim.min.js"></script> -->
+    <!-- <script src="https_//cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script> -->
+    <!-- <script src="https_//stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script> -->
 </body>
 </html>

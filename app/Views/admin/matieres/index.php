@@ -2,23 +2,29 @@
 // Expected data from MatieresController:
 // $matieres (array of subject objects)
 // $title (string)
-// $filters (array: search, type_matiere)
+// $filters (array: search, type_matiere, type_academique)
 // $currentPage, $totalPages, $totalMatieres, $perPage
 // $orderBy, $orderDir
-// $distinctTypes (array of strings for filter dropdown)
+// $distinctFunctionalTypes (array of strings for type_matiere filter dropdown)
+// $distinctAcademicTypes (array of strings for type_academique filter dropdown)
 
 $matieres = $data['matieres'] ?? [];
 $title = $data['title'] ?? __('matieres_title_list_default', 'Subjects List');
-$filters = $data['filters'] ?? ['search' => '', 'type_matiere' => ''];
+$filters = $data['filters'] ?? ['search' => '', 'type_matiere' => '', 'type_academique' => ''];
 $currentPage = $data['currentPage'] ?? 1;
 $totalPages = $data['totalPages'] ?? 1;
 $orderBy = $data['orderBy'] ?? 'nom';
 $orderDir = $data['orderDir'] ?? 'ASC';
-$distinctTypes = $data['distinctTypes'] ?? [];
+$distinctFunctionalTypes = $data['distinctFunctionalTypes'] ?? [];
+$distinctAcademicTypes = $data['distinctAcademicTypes'] ?? [];
 $totalMatieres = $data['totalMatieres'] ?? 0;
 
-$queryStringWithoutPage = http_build_query(array_merge($_GET, ['page' => null])); // For sort links
-$queryStringWithoutSort = http_build_query(array_merge($_GET, ['orderBy' => null, 'orderDir' => null])); // For pagination links
+// Build query strings for sorting and pagination to preserve filters
+$baseQueryForLinks = $_GET;
+unset($baseQueryForLinks['url']); // Remove 'url' if present from htaccess parsing
+
+$queryStringForSort = http_build_query(array_diff_key($baseQueryForLinks, ['orderBy' => '', 'orderDir' => '', 'page' => '']));
+$queryStringForPagination = http_build_query(array_diff_key($baseQueryForLinks, ['page' => '']));
 
 ?>
 
@@ -41,22 +47,33 @@ $queryStringWithoutSort = http_build_query(array_merge($_GET, ['orderBy' => null
         <div class="card-body">
             <form method="GET" action="<?php echo URL_ROOT; ?>/admin/matieres/index" class="filter-form">
                 <div class="row">
-                    <div class="col-md-5 form-group">
+                    <div class="col-md-4 form-group">
                         <label for="search"><?php echo __('matieres_filter_search_label', 'Search (Name/Code)'); ?>:</label>
                         <input type="text" name="search" id="search" class="form-control" value="<?php echo htmlspecialchars($filters['search'] ?? ''); ?>" placeholder="<?php echo __('matieres_filter_search_placeholder', 'Enter name or code...'); ?>">
                     </div>
-                    <div class="col-md-4 form-group">
-                        <label for="type_matiere_filter"><?php echo __('matieres_filter_type_label', 'Type'); ?>:</label>
+                    <div class="col-md-3 form-group">
+                        <label for="type_matiere_filter"><?php echo __('matieres_filter_type_label', 'Functional Type'); ?>:</label>
                         <select name="type_matiere" id="type_matiere_filter" class="form-control">
-                            <option value=""><?php echo __('global_all_types', 'All Types'); ?></option>
-                            <?php foreach($distinctTypes as $type): ?>
+                            <option value=""><?php echo __('global_all_types', 'All Functional Types'); ?></option>
+                            <?php foreach($distinctFunctionalTypes as $type): ?>
                                 <option value="<?php echo htmlspecialchars($type); ?>" <?php echo (($filters['type_matiere'] ?? '') === $type) ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars(ucfirst($type)); // Or __("matiere_type_".$type) if you translate types ?>
+                                    <?php echo htmlspecialchars(ucfirst($type)); ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="col-md-3 form-group d-flex align-items-end">
+                    <div class="col-md-3 form-group">
+                        <label for="filter_type_academique"><?php echo __('matieres_filter_type_academique_label', 'Academic Type'); ?>:</label>
+                        <select name="type_academique" id="filter_type_academique" class="form-control">
+                            <option value=""><?php echo __('global_all_academic_types', 'All Academic Types'); ?></option>
+                            <?php foreach($distinctAcademicTypes as $type): ?>
+                                <option value="<?php echo htmlspecialchars($type); ?>" <?php echo (($filters['type_academique'] ?? '') === $type) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars(ucfirst($type)); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-2 form-group d-flex align-items-end">
                         <button type="submit" class="btn btn-info mr-2"><?php echo __('matieres_filter_button', 'Filter'); ?></button>
                         <a href="<?php echo URL_ROOT; ?>/admin/matieres/index" class="btn btn-secondary"><?php echo __('matieres_filter_clear_button', 'Clear'); ?></a>
                     </div>
@@ -76,13 +93,14 @@ $queryStringWithoutSort = http_build_query(array_merge($_GET, ['orderBy' => null
                         $sortable_columns = [
                             'nom' => __('matieres_col_nom', 'Name'),
                             'code' => __('matieres_col_code', 'Code'),
-                            'type_matiere' => __('matieres_col_type', 'Type'),
+                            'type_matiere' => __('matieres_col_type', 'Functional Type'),
+                            'type_academique' => __('matieres_col_type_academique', 'Academic Type'),
                             'coefficient' => __('matieres_col_coeff', 'Coefficient')
                         ];
                     ?>
                     <?php foreach($sortable_columns as $col_key => $col_val):
                         $newOrderDir = ($orderBy == $col_key && $orderDir == 'ASC') ? 'DESC' : 'ASC';
-                        $sortQuery = $queryStringWithoutPage . '&orderBy=' . $col_key . '&orderDir=' . $newOrderDir;
+                        $sortQuery = $queryStringForSort . '&orderBy=' . $col_key . '&orderDir=' . $newOrderDir . '&page=1';
                     ?>
                         <th><a href="<?php echo URL_ROOT; ?>/admin/matieres/index?<?php echo $sortQuery; ?>"><?php echo $col_val; ?></a></th>
                     <?php endforeach; ?>
@@ -95,7 +113,8 @@ $queryStringWithoutSort = http_build_query(array_merge($_GET, ['orderBy' => null
                     <td><?php echo htmlspecialchars($matiere->nom); ?></td>
                     <td><?php echo htmlspecialchars($matiere->code ?? ''); ?></td>
                     <td><?php echo htmlspecialchars($matiere->type_matiere ?? ''); ?></td>
-                    <td><?php echo htmlspecialchars(number_format((float)($matiere->coefficient ?? 0), 2)); ?></td>
+                    <td><?php echo htmlspecialchars($matiere->type_academique ?? ''); ?></td>
+                    <td><?php echo htmlspecialchars(number_format((float)($matiere->coefficient ?? 0), 2, '.', '')); ?></td>
                     <td class="action-buttons">
                         <?php if (auth_can('edit_matiere')): ?>
                             <a href="<?php echo URL_ROOT; ?>/admin/matieres/edit/<?php echo $matiere->id; ?>" class="btn btn-sm btn-warning" title="<?php echo __('global_edit_button', 'Edit'); ?>"><i class="fas fa-edit"></i></a>
@@ -117,17 +136,17 @@ $queryStringWithoutSort = http_build_query(array_merge($_GET, ['orderBy' => null
         <nav class="pagination-nav mt-4">
             <ul class="pagination justify-content-center">
                 <?php if ($currentPage > 1): ?>
-                    <li class="page-item"><a class="page-link" href="<?php echo URL_ROOT; ?>/admin/matieres/index?<?php echo $queryStringWithoutSort . '&page=' . ($currentPage - 1); ?>"><?php echo __('pagination_previous', '&laquo; Previous'); ?></a></li>
+                    <li class="page-item"><a class="page-link" href="<?php echo URL_ROOT; ?>/admin/matieres/index?<?php echo $queryStringForPagination . '&page=' . ($currentPage - 1); ?>"><?php echo __('pagination_previous', '&laquo; Previous'); ?></a></li>
                 <?php endif; ?>
 
                 <?php for ($i = 1; $i <= $totalPages; $i++): ?>
                     <li class="page-item <?php echo ($i == $currentPage) ? 'active' : ''; ?>">
-                        <a class="page-link" href="<?php echo URL_ROOT; ?>/admin/matieres/index?<?php echo $queryStringWithoutSort . '&page=' . $i; ?>"><?php echo $i; ?></a>
+                        <a class="page-link" href="<?php echo URL_ROOT; ?>/admin/matieres/index?<?php echo $queryStringForPagination . '&page=' . $i; ?>"><?php echo $i; ?></a>
                     </li>
                 <?php endfor; ?>
 
                 <?php if ($currentPage < $totalPages): ?>
-                    <li class="page-item"><a class="page-link" href="<?php echo URL_ROOT; ?>/admin/matieres/index?<?php echo $queryStringWithoutSort . '&page=' . ($currentPage + 1); ?>"><?php echo __('pagination_next', 'Next &raquo;'); ?></a></li>
+                    <li class="page-item"><a class="page-link" href="<?php echo URL_ROOT; ?>/admin/matieres/index?<?php echo $queryStringForPagination . '&page=' . ($currentPage + 1); ?>"><?php echo __('pagination_next', 'Next &raquo;'); ?></a></li>
                 <?php endif; ?>
             </ul>
         </nav>
