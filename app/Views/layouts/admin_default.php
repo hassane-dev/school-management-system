@@ -25,11 +25,20 @@
                     <li><a href="<?php echo URL_ROOT; ?>/admin/parametresecole"><?php echo __('admin_nav_school_settings', 'School Settings'); ?></a></li>
                     <li><hr></li>
                     <li><strong><?php echo __('admin_management_group_title', 'Management'); ?></strong></li>
-                    <li><a href="<?php echo URL_ROOT; ?>/admin/enseignant"><?php echo __('admin_nav_teachers', 'Teachers'); ?></a></li>
-                    <li><a href="<?php echo URL_ROOT; ?>/admin/enseignement"><?php echo __('admin_nav_assignments', 'Assignments'); ?></a></li>
-                    <?php // Future links: Users, Roles, Students, etc. ?>
+                    <li><a href="<?php echo URL_ROOT ?>/admin/roles"><?php echo __('admin_nav_roles', 'Roles'); ?></a></li>
+                    <li><a href="<?php echo URL_ROOT ?>/admin/users"><?php echo __('admin_nav_users', 'Users'); ?></a></li>
+                    <li><a href="<?php echo URL_ROOT ?>/admin/enseignant"><?php echo __('admin_nav_teachers', 'Teachers'); ?></a></li>
+                    <li><a href="<?php echo URL_ROOT ?>/admin/enseignement"><?php echo __('admin_nav_assignments', 'Assignments'); ?></a></li>
+                    <?php // Future links: Students, etc. ?>
+
+                    <?php if (Auth::can('access_superadmin_interface')): ?>
+                        <li><hr style="border-color: #4a627a;"></li>
+                        <li><strong><?php echo __('admin_superadmin_group_title', 'SuperAdmin Zone'); ?></strong></li>
+                        <li><a href="<?php echo URL_ROOT; ?>/superadmin/dashboard" style="color: #f1c40f;"><?php echo __('admin_nav_superadmin_dashboard', 'SuperAdmin Panel'); ?></a></li>
+                    <?php endif; ?>
+
                     <li><hr></li>
-                    <li><a href="<?php echo URL_ROOT; ?>/auth/logout" style="color: #ffc107;"><?php echo __('admin_logout_link', 'Logout'); ?></a></li>
+                    <li><a href="<?php echo URL_ROOT; ?>/auth/logout" style="color: #e74c3c;"><?php echo __('admin_logout_link', 'Logout'); ?></a></li>
                     <li><hr></li>
                     <li><a href="<?php echo URL_ROOT; ?>/"><?php echo __('admin_back_to_site_link', 'Back to Main Site'); ?></a></li>
                 </ul>

@@ -70,13 +70,32 @@ class AuthController extends Controller {
 
                     $_SESSION['flash_message'] = ['text' => I18n::translate('login_success', 'Login successful!'), 'type' => 'success'];
 
-                    // Role-based redirection
+                    // Refined Role-based redirection
                     $userRoles = Auth::getCurrentUserRoleNames();
-                    if (in_array('SuperAdmin', $userRoles) || in_array('Admin', $userRoles)) {
-                         redirectTo('/admin/dashboard');
+                    $userEmail = $user->email; // Assuming $user object is available here and has email
+
+                    // Priority for Super User by specific email
+                    if ($userEmail === 'hasmixione@gmail.com') {
+                        // Optionally ensure 'SuperAdmin' role is also present or treat email as override
+                        // For now, email is king for this specific Super User.
+                        // This user should also be assigned 'SuperAdmin' role with 'access_superadmin_interface' perm.
+                        $_SESSION['is_ultimate_superadmin'] = true; // Special flag if needed
+                        redirectTo('/superadmin/dashboard');
+                    }
+                    // Then check by roles
+                    elseif (in_array('SuperAdmin', $userRoles)) {
+                        redirectTo('/superadmin/dashboard');
+                    } elseif (in_array('Admin', $userRoles)) {
+                        redirectTo('/admin/dashboard');
+                    } elseif (in_array('Enseignant', $userRoles)) {
+                        redirectTo('/enseignant/dashboard');
+                    } elseif (in_array('Etudiant', $userRoles)) {
+                        redirectTo('/etudiant/dashboard');
+                    } elseif (in_array('Parent', $userRoles)) {
+                        redirectTo('/parent/dashboard');
                     } else {
-                         // redirectTo('/dashboard'); // A general user dashboard
-                         redirectTo('/'); // Or to the main site homepage
+                        // Default redirect if no specific role match or for users with basic/no roles
+                        redirectTo('/dashboard'); // Generic user dashboard or site homepage
                     }
 
                 } else {

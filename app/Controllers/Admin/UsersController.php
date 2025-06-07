@@ -230,31 +230,49 @@ class UsersController extends Controller {
                 ];
 
                 $passwordChanged = false;
-                if (!empty($formDataUpdate['mot_de_passe'])) {
-                    if ($this->userModel->updatePassword($id, password_hash($formDataUpdate['mot_de_passe'], PASSWORD_DEFAULT))) {
+                $passwordChangeAttempted = !empty($formDataUpdate['mot_de_passe']);
+
+                if ($passwordChangeAttempted) {
+                    if ($this->userModel->updatePassword($id, $formDataUpdate['mot_de_passe'])) { // Pass raw password
                         $passwordChanged = true;
                     } else {
-                        // Password update failed, but other fields might still be updated. Add specific error?
-                        $_SESSION['flash_message'] = ['text' => __('users_password_update_error_msg', 'Error updating password, but other details might be saved.'), 'type' => 'warning'];
+                        // Password update failed. Set a flash message.
+                        // This might overwrite a successful general update message later, so handle flow.
+                        $_SESSION['flash_message'] = ['text' => __('users_password_update_error_msg', 'Error updating password. Other details might have been saved if changed.'), 'type' => 'danger'];
+                        // We could add this to $formDataUpdate['errors']['mot_de_passe'] as well for inline display
+                        $formDataUpdate['errors']['mot_de_passe'] = __('users_password_update_error_msg');
                     }
                 }
 
+                // Update other user data (excluding password)
                 $updateResult = $this->userModel->update($id, $userDataForModel);
 
-                if ($updateResult || $passwordChanged) {
+                // Determine overall success
+                $overallSuccess = ($updateResult && !$passwordChangeAttempted) || ($updateResult && $passwordChanged) || (!$updateResult && $passwordChanged && count($userDataForModel) == 0);
+                // $overallSuccess means:
+                // 1. Profile updated, no password change attempted OR
+                // 2. Profile updated AND password changed OR
+                // 3. Profile NOT updated (no changes) BUT password WAS changed successfully.
+
+                if ($overallSuccess) {
                     if (Auth::can('assign_roles_to_user')) {
                         $this->userRoleModel->syncUserRoles($id, $formDataUpdate['roles'], $activeYearId);
                     }
-                     // Set success message only if no prior warning about password
-                    if (!isset($_SESSION['flash_message']) || $_SESSION['flash_message']['type'] !== 'warning') {
-                        $_SESSION['flash_message'] = ['text' => __('users_edit_success_msg', 'User updated successfully.'), 'type' => 'success'];
+                    // Set success message only if no prior error/warning about password OR if password change was also successful
+                    if (!isset($_SESSION['flash_message']) || $_SESSION['flash_message']['type'] !== 'danger') {
+                         $_SESSION['flash_message'] = ['text' => __('users_edit_success_msg', 'User updated successfully.'), 'type' => 'success'];
                     }
                     redirectTo('/admin/users');
-                } elseif (is_string($updateResult)) {
-                     $_SESSION['flash_message'] = ['text' => $updateResult, 'type' => 'danger']; // e.g. 'duplicate_email'
-                     if ($updateResult === 'duplicate_email') $formDataUpdate['errors']['email'] = $updateResult;
-
-                } else { // Generic update error if not string and not true
+                } elseif (is_string($updateResult) && strpos($updateResult, 'duplicate') !== false) { // Model returned a specific error string for user data
+                     $_SESSION['flash_message'] = ['text' => I18n::translate('validation.unique', ['field'=>'Email', 'value'=>$formDataUpdate['email']]), 'type' => 'danger'];
+                     if ($updateResult === 'duplicate_email') $formDataUpdate['errors']['email'] = $_SESSION['flash_message']['text'];
+                } elseif (!$passwordChangeAttempted || ($passwordChangeAttempted && !$passwordChanged)) {
+                    // If general update failed AND (no password change was attempted OR password change also failed)
+                    // Or if general update was fine but password change failed (already handled by flash message for password)
+                    if (!isset($_SESSION['flash_message'])) { // Avoid overwriting specific password error
+                         $_SESSION['flash_message'] = ['text' => __('users_edit_error_msg', 'Error updating user or no changes made.'), 'type' => 'danger'];
+                    }
+                } else { // Generic update error if not string and not true, and not covered above
                     $_SESSION['flash_message'] = ['text' => __('users_edit_error_msg', 'Error updating user or no changes made.'), 'type' => 'danger'];
                 }
             }

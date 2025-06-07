@@ -171,7 +171,12 @@ class UtilisateurModel extends Model {
         }
     }
 
-    public function updatePassword($id, $hashedPassword) {
+    public function updatePassword($id, $rawPassword) { // Accepts raw password
+        if (empty($rawPassword)) {
+            error_log("UtilisateurModel::updatePassword - Attempted to update with an empty password for user ID: $id");
+            return false; // Or throw an exception
+        }
+        $hashedPassword = password_hash($rawPassword, PASSWORD_DEFAULT);
         $this->db->query("UPDATE {$this->table} SET mot_de_passe = :mot_de_passe WHERE id = :id");
         $this->db->bind(':id', $id, PDO::PARAM_INT);
         $this->db->bind(':mot_de_passe', $hashedPassword);

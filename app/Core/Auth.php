@@ -48,19 +48,21 @@ class Auth {
 
     public static function getActiveAcademicYearId() {
         self::startSession();
+        self::startSession();
+        // Check if already set in session (e.g., from this login or previous request)
         if (isset($_SESSION['active_annee_id'])) {
             return $_SESSION['active_annee_id'];
         }
+
+        // If not in session, fetch from DB, then store in session
         try {
             $activeYear = self::getAnneeAcademiqueModel()->getActiveYear();
             $activeYearId = $activeYear ? $activeYear->id : null;
-            // Cache it in session for the duration of the user's session,
-            // or until it's explicitly refreshed.
             $_SESSION['active_annee_id'] = $activeYearId;
             return $activeYearId;
         } catch (\Exception $e) {
             error_log("Auth::getActiveAcademicYearId - Error fetching active academic year: " . $e->getMessage());
-            return null; // Or a sensible default/fallback
+            return null;
         }
     }
 
@@ -175,14 +177,27 @@ class Auth {
             }
 
             $_SESSION['user_id'] = $user->id;
-            // Store only necessary, non-sensitive user data. Avoid storing password hash.
             $userDataToStore = ['id' => $user->id, 'nom' => $user->nom, 'email' => $user->email, 'langue_preferee' => $user->langue_preferee];
             $_SESSION['user_data'] = $userDataToStore;
 
-            $contextAnneeId = self::getActiveAcademicYearId();
-            $_SESSION['active_annee_id'] = $contextAnneeId;
+            // 1. Session Multi-Langue: Set session language from user's preference
+            if (!empty($user->langue_preferee) && class_exists('App\Core\I18n') && in_array($user->langue_preferee, I18n::getAvailableLanguages())) {
+                I18n::setCurrentLang($user->langue_preferee); // This updates $_SESSION['lang'] and loads translations
+            } else {
+                // If user has no preference or it's invalid, I18n::determineInitialLanguage() in index.php
+                // would have already set a language (URL param, previous session, or default).
+                // We ensure that I18n's current language is reflected in the session if not already.
+                // This might be redundant if I18n::setCurrentLang always sets session,
+                // and determineInitialLanguage always calls setCurrentLang.
+                if (class_exists('App\Core\I18n') && (!isset($_SESSION['lang']) || $_SESSION['lang'] !== I18n::getCurrentLang())) {
+                     $_SESSION['lang'] = I18n::getCurrentLang();
+                }
+            }
 
-            // Fetch roles for the current context (active year + global roles)
+            // 2. Sauvegarde de Contexte d'Année (Academic Year Context)
+            $contextAnneeId = self::getActiveAcademicYearId();
+            // getActiveAcademicYearId now handles setting $_SESSION['active_annee_id']
+
             $userRoles = self::getUserRoleModel()->getRolesForUser($userId, $contextAnneeId, true); // true to include global roles
             $_SESSION['user_current_context_roles'] = $userRoles;
 
