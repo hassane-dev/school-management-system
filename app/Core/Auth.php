@@ -9,7 +9,9 @@ use App\Models\UserRoleModel;
 use App\Models\RolePermissionModel;
 use App\Models\AnneeAcademiqueModel;
 use App\Models\PermissionModel;
-use App\Core\I18n; // For translating messages
+use App\Models\ParametresEcoleModel; // Added
+use App\Models\MensualiteModel;      // Added
+use App\Core\I18n;
 
 class Auth {
     private static $utilisateurModel = null;
@@ -17,6 +19,9 @@ class Auth {
     private static $rolePermissionModel = null;
     private static $anneeAcademiqueModel = null;
     private static $permissionModel = null;
+    private static $paramEcoleModel = null;    // Added
+    private static $mensualiteModel = null;    // Added
+
 
     // Private static getters for models to ensure they are singletons within Auth class context
     private static function getUtilisateurModel(): UtilisateurModel {
@@ -39,6 +44,15 @@ class Auth {
         if (self::$permissionModel === null) self::$permissionModel = new PermissionModel();
         return self::$permissionModel;
     }
+    private static function getParamEcoleModel(): ParametresEcoleModel { // Added
+        if (self::$paramEcoleModel === null) self::$paramEcoleModel = new ParametresEcoleModel();
+        return self::$paramEcoleModel;
+    }
+    private static function getMensualiteModel(): MensualiteModel { // Added
+         if (self::$mensualiteModel === null) self::$mensualiteModel = new MensualiteModel();
+         return self::$mensualiteModel;
+    }
+
 
     private static function startSession() {
         if (session_status() == PHP_SESSION_NONE && !headers_sent()) {
@@ -167,6 +181,40 @@ class Auth {
         }
     }
 
+    /**
+     * Checks if a student can access their notes based on school type and payment status.
+     * Note: The actual determination of "current relevant school month" for payment check
+     * is deferred to the controller that displays notes (e.g., NotesController in Sprint 10).
+     * This method provides the financial check part.
+     */
+    public static function canAccessNotes($eleveId): bool {
+        self::startSession();
+        // Basic check: must be logged in. A more specific permission might be relevant too.
+        if (!self::isLoggedIn()) return false;
+
+        try {
+            $schoolSettings = self::getParamEcoleModel()->getSettings(); // Assumes ParametresEcoleModel has getSettings()
+            $schoolType = $schoolSettings->type_etablissement ?? 'public';
+
+            // Only apply payment checks for 'prive' or 'parapublic' types
+            if ($schoolType === 'prive' || $schoolType === 'parapublic') {
+                $activeYearId = self::getActiveAcademicYearId();
+                if (!$activeYearId) {
+                    // If no active year context, policy might be to deny or allow. Deny is safer.
+                    error_log("Auth::canAccessNotes - No active academic year for eleveId: $eleveId");
+                    return false;
+                }
+                // Call the MensualiteModel method to check if all past due installments are paid
+                return self::getMensualiteModel()->areAllDueInstallmentsPaid($eleveId, $activeYearId);
+            }
+        } catch (\Exception $e) {
+            error_log("Auth::canAccessNotes - Error during check for eleveId $eleveId: " . $e->getMessage());
+            return false; // Deny access on error
+        }
+
+        return true; // Access granted for public schools or if no payment block applicable / error occurred before type check
+    }
+
     public static function loadUserAuthContext($userId): bool {
         self::startSession();
         try {
@@ -181,14 +229,9 @@ class Auth {
             $_SESSION['user_data'] = $userDataToStore;
 
             // 1. Session Multi-Langue: Set session language from user's preference
-            if (!empty($user->langue_preferee) && class_exists('App\Core\I18n') && in_array($user->langue_preferee, I18n::getAvailableLanguages())) {
-                I18n::setCurrentLang($user->langue_preferee); // This updates $_SESSION['lang'] and loads translations
+            if (!empty($user->langue_preferee) && class_exists('App\Core\I18n') && I18n::isLangAvailable($user->langue_preferee)) { // Added isLangAvailable check
+                I18n::setCurrentLang($user->langue_preferee);
             } else {
-                // If user has no preference or it's invalid, I18n::determineInitialLanguage() in index.php
-                // would have already set a language (URL param, previous session, or default).
-                // We ensure that I18n's current language is reflected in the session if not already.
-                // This might be redundant if I18n::setCurrentLang always sets session,
-                // and determineInitialLanguage always calls setCurrentLang.
                 if (class_exists('App\Core\I18n') && (!isset($_SESSION['lang']) || $_SESSION['lang'] !== I18n::getCurrentLang())) {
                      $_SESSION['lang'] = I18n::getCurrentLang();
                 }
@@ -196,9 +239,8 @@ class Auth {
 
             // 2. Sauvegarde de Contexte d'Année (Academic Year Context)
             $contextAnneeId = self::getActiveAcademicYearId();
-            // getActiveAcademicYearId now handles setting $_SESSION['active_annee_id']
 
-            $userRoles = self::getUserRoleModel()->getRolesForUser($userId, $contextAnneeId, true); // true to include global roles
+            $userRoles = self::getUserRoleModel()->getRolesForUser($userId, $contextAnneeId, true);
             $_SESSION['user_current_context_roles'] = $userRoles;
 
             $allPermissionNames = [];
@@ -215,27 +257,27 @@ class Auth {
             if ($isSuperAdmin) {
                 $allSystemPermissions = self::getPermissionModel()->getAll();
                 foreach ($allSystemPermissions as $p) {
-                    $allPermissionNames[$p->nom] = true; // Using keys for uniqueness
+                    $allPermissionNames[$p->nom] = true;
                 }
             } else if (!empty($userRoles)) {
                 foreach ($userRoles as $role) {
                     $permissionsForRole = self::getRolePermissionModel()->getPermissionsForRole($role->id);
                     foreach ($permissionsForRole as $perm) {
-                        $allPermissionNames[$perm->nom] = true; // Using keys for uniqueness
+                        $allPermissionNames[$perm->nom] = true;
                     }
                 }
             }
-            $_SESSION['user_permissions_list'] = array_keys($allPermissionNames); // Store unique permission names
+            $_SESSION['user_permissions_list'] = array_keys($allPermissionNames);
 
-            // Set current language from user preference
-            if (isset($user->langue_preferee) && class_exists('App\Core\I18n')) {
-                I18n::setCurrentLang($user->langue_preferee);
-            }
+            // Redundant language setting, already handled above. Removed.
+            // if (isset($user->langue_preferee) && class_exists('App\Core\I18n')) {
+            //    I18n::setCurrentLang($user->langue_preferee);
+            // }
 
             return true;
         } catch (\Exception $e) {
             error_log("Auth::loadUserAuthContext - Error: " . $e->getMessage());
-            self::logout(); // Log out user on error during context load
+            self::logout();
             return false;
         }
     }
@@ -250,7 +292,7 @@ class Auth {
                 $params["secure"], $params["httponly"]
             );
         }
-        @session_destroy(); // Suppress errors if session already destroyed or invalid
+        @session_destroy();
     }
 }
 ?>

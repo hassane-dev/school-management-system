@@ -55,6 +55,39 @@
                     <?php endif; ?>
 
                     <?php
+                    // Group for Student Management
+                    $canViewStudentManagement = Auth::can('view_eleves'); // Base permission for the group
+                    ?>
+                    <?php if ($canViewStudentManagement): ?>
+                        <li><hr></li>
+                        <li><strong><?= __('admin_student_management_group_title') ?></strong></li>
+                        <?php if (Auth::can('view_eleves')): ?>
+                            <li><a href="<?= URL_ROOT ?>/admin/eleves"><i class="fas fa-user-graduate fa-fw"></i> <?= __('admin_nav_students') ?></a></li>
+                        <?php endif; ?>
+                        <?php // Link to assign_classe is usually part of student edit, not separate nav item ?>
+                        <?php // Link to import/export could be here or on student list page
+                        if (Auth::can('import_export_eleves')): ?>
+                            <!-- <li><a href="<?= URL_ROOT ?>/admin/eleves/manage_imports_exports"><i class="fas fa-file-import fa-fw"></i> <?= __('admin_nav_student_import_export') ?></a></li> -->
+                        <?php endif; ?>
+                    <?php endif; ?>
+
+
+                    <?php
+                    // Group for Student Accounting
+                    $canViewStudentAccounting = Auth::can('view_comptabilite_eleve') || Auth::can('view_reduction_types');
+                    ?>
+                    <?php if ($canViewStudentAccounting): ?>
+                        <li><hr></li>
+                        <li><strong><?= __('admin_student_accounting_group_title') ?></strong></li>
+                        <?php if (Auth::can('view_comptabilite_eleve')): ?>
+                            <li><a href="<?= URL_ROOT ?>/admin/comptabiliteeleve"><i class="fas fa-cash-register fa-fw"></i> <?= __('admin_nav_student_accounts') ?></a></li>
+                        <?php endif; ?>
+                        <?php if (Auth::can('view_reduction_types')): ?>
+                             <li><a href="<?= URL_ROOT ?>/admin/reductiontypes"><i class="fas fa-tags fa-fw"></i> <?= __('admin_nav_reduction_types') ?></a></li>
+                        <?php endif; ?>
+                    <?php endif; ?>
+
+                    <?php
                     // Users & Roles Group
                     $canViewUserManagement = Auth::can('view_users') || Auth::can('view_roles');
                     ?>

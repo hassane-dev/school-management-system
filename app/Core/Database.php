@@ -110,5 +110,23 @@ class Database {
         // Return driver-specific error message (index 2)
         return $errorInfo[2] ?? null;
     }
+
+    /**
+     * Binds multiple values to a prepared statement.
+     * @param array $data Associative array of data to bind. Keys should match placeholders.
+     * @param array $allowedKeysWithDefaults Associative array where keys are placeholder names (without ':')
+     *                                        and values are their defaults if not found in $data.
+     *                                        Or a simple array of keys if default is always null.
+     */
+    public function bindMultiple($data, $allowedKeysWithDefaults) {
+        foreach ($allowedKeysWithDefaults as $key => $default) {
+            // If $allowedKeysWithDefaults is a simple list (numeric keys), $key is index, $default is the actual key name.
+            // If $allowedKeysWithDefaults is an associative array, $key is the key name, $default is its default value.
+            $actualKey = is_int($key) ? $default : $key;
+            $actualDefault = is_int($key) ? null : $default;
+
+            $this->bind(":$actualKey", $data[$actualKey] ?? $actualDefault);
+        }
+    }
 }
 ?>
