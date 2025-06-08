@@ -114,6 +114,7 @@
     "admin_nav_subjects": "Subjects",
     "admin_nav_classes": "Classes",
     "admin_nav_assignments": "Teacher Assignments",
+    "admin_nav_curricula": "Curricula",
     "admin_nav_users": "Users",
     "admin_nav_roles": "Roles",
     "admin_users_roles_group_title": "Users & Roles",
@@ -419,5 +420,17 @@
     "enseignements_filter_class_label": "Class",
     "enseignements_filter_year_label": "Academic Year",
     "enseignements_filter_subject_label": "Subject",
-    "global_all_academic_types": "All Academic Types"
+    "ps_title_list_default": "Curricula List",
+    "ps_title_add_default": "Add New Curriculum",
+    "ps_title_edit_default": "Edit Curriculum",
+    "ps_title_manage_details_default": "Manage Curriculum Details",
+    "ps_form_section_details": "Curriculum Details",
+    "ps_programme_info": "Curriculum Information",
+    "ps_details_col_coeff": "Curriculum Coeff.",
+    "ps_details_col_heures": "Hours/Week",
+    "ps_details_col_ordre": "Order",
+    "ps_details_form_label_coeff": "Curriculum Coefficient",
+    "ps_details_form_label_heures": "Hours per Week",
+    "ps_details_form_label_ordre": "Display Order",
+    "ps_details_all_matieres_added": "All available subjects are already in this curriculum, or no subjects exist in the system."
 }

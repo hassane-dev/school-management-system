@@ -23,19 +23,19 @@
 
                     <li><hr></li>
                     <li><strong><?php echo __('admin_settings_group_title', 'Settings'); ?></strong></li>
-                    <?php if (Auth::can('manage_general_settings') || (method_exists('Auth','can') && Auth::can('view_general_settings'))): // Assuming view perm if more granular ?>
+                    <?php if (Auth::can('manage_general_settings') || (method_exists('Auth','can') && Auth::can('view_general_settings'))): ?>
                         <li><a href="<?php echo URL_ROOT; ?>/admin/parametresgeneraux"><i class="fas fa-cogs fa-fw"></i> <?php echo __('admin_nav_general_settings', 'General'); ?></a></li>
                     <?php endif; ?>
                     <?php if (Auth::can('view_academic_years')): ?>
                         <li><a href="<?php echo URL_ROOT; ?>/admin/anneesacademiques"><i class="fas fa-calendar-alt fa-fw"></i> <?php echo __('admin_nav_academic_years', 'Academic Years'); ?></a></li>
                     <?php endif; ?>
-                    <?php if (Auth::can('manage_school_settings') || (method_exists('Auth','can') && Auth::can('view_school_settings'))): // Assuming view perm if more granular ?>
+                    <?php if (Auth::can('manage_school_settings') || (method_exists('Auth','can') && Auth::can('view_school_settings'))): ?>
                         <li><a href="<?php echo URL_ROOT; ?>/admin/parametresecole"><i class="fas fa-school fa-fw"></i> <?php echo __('admin_nav_school_settings', 'School Info'); ?></a></li>
                     <?php endif; ?>
 
                     <?php
                     // Academic Management Group
-                    $canViewAcademicManagement = Auth::can('view_matieres') || Auth::can('view_classes') || Auth::can('view_enseignements');
+                    $canViewAcademicManagement = Auth::can('view_matieres') || Auth::can('view_classes') || Auth::can('view_enseignements') || Auth::can('view_programmes_scolaires');
                     ?>
                     <?php if ($canViewAcademicManagement): ?>
                         <li><hr></li>
@@ -48,6 +48,9 @@
                         <?php endif; ?>
                         <?php if (Auth::can('view_enseignements')): ?>
                             <li><a href="<?php echo URL_ROOT; ?>/admin/enseignements"><i class="fas fa-user-graduate fa-fw"></i> <?php echo __('admin_nav_assignments', 'Teacher Assignments'); ?></a></li>
+                        <?php endif; ?>
+                        <?php if (Auth::can('view_programmes_scolaires')): ?>
+                            <li><a href="<?php echo URL_ROOT; ?>/admin/programmesscolaires"><i class="fas fa-drafting-compass fa-fw"></i> <?php echo __('admin_nav_curricula', 'Curricula'); ?></a></li>
                         <?php endif; ?>
                     <?php endif; ?>
 
@@ -111,7 +114,7 @@
               <?php
                 // Flash message display (using Auth::displayFlash() is preferred if it exists and is robust)
                 if (class_exists('App\Core\Auth') && method_exists('App\Core\Auth', 'displayFlash')) {
-                    echo \App\Core\Auth::displayFlash(); // Assuming Auth class has a displayFlash method
+                    echo \App\Core\Auth::displayFlash();
                 } elseif (isset($_SESSION['flash_message'])) {
                     $flash = $_SESSION['flash_message'];
                     $alertType = is_array($flash) ? ($flash['type'] ?? 'info') : 'info';

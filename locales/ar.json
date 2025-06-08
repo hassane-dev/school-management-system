@@ -114,6 +114,7 @@
     "admin_nav_subjects": "المواد الدراسية",
     "admin_nav_classes": "الفصول الدراسية",
     "admin_nav_assignments": "تكاليف المعلمين",
+    "admin_nav_curricula": "المناهج الدراسية",
     "admin_nav_users": "المستخدمون",
     "admin_nav_roles": "الأدوار",
     "admin_users_roles_group_title": "المستخدمون والأدوار",
@@ -418,5 +419,16 @@
     "enseignements_filter_teacher_label": "المعلم",
     "enseignements_filter_class_label": "الفصل",
     "enseignements_filter_year_label": "السنة الأكاديمية",
-    "enseignements_filter_subject_label": "المادة"
+    "enseignements_filter_subject_label": "المادة",
+    "ps_title_list_default": "قائمة المناهج الدراسية",
+    "ps_title_manage_details_default": "إدارة تفاصيل المنهج الدراسي",
+    "ps_form_section_details": "تفاصيل المنهج الدراسي",
+    "ps_programme_info": "معلومات المنهج الدراسي",
+    "ps_details_col_coeff": "معامل المنهج",
+    "ps_details_col_heures": "ساعات/أسبوع",
+    "ps_details_col_ordre": "الترتيب",
+    "ps_details_form_label_coeff": "معامل المنهج",
+    "ps_details_form_label_heures": "ساعات في الأسبوع",
+    "ps_details_form_label_ordre": "ترتيب العرض",
+    "ps_details_all_matieres_added": "جميع المواد المتاحة موجودة بالفعل في هذا المنهج، أو لا توجد مواد في النظام."
 }
