@@ -1,172 +1,137 @@
 <!DOCTYPE html>
-<html lang="<?php echo getCurrentLanguage(); ?>" dir="<?php echo get_app_direction(); ?>">
+<html lang="<?= getCurrentLanguage() ?>" dir="<?= get_app_direction() ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars(get_application_name()); ?> - <?php echo __('admin_area_title', 'Admin Area'); ?> <?php echo isset($title) ? ' | ' . htmlspecialchars($title) : ''; ?></title>
-    <link rel="stylesheet" href="<?php echo URL_ROOT; ?>/css/style.css"> <!-- General styles -->
-    <link rel="stylesheet" href="<?php echo URL_ROOT; ?>/css/admin_style.css"> <!-- Admin specific styles -->
+    <title><?= htmlspecialchars(get_application_name()) ?> - <?= __('admin_area_title') ?> <?= isset($title) ? ' | ' . htmlspecialchars($title) : '' ?></title>
+
+    <!-- Local Bootstrap CSS -->
+    <link rel="stylesheet" href="<?= URL_ROOT ?>/vendors/bootstrap/css/bootstrap.min.css">
+    <!-- Local Font Awesome CSS -->
+    <link rel="stylesheet" href="<?= URL_ROOT ?>/vendors/fontawesome/css/all.min.css">
+
+    <!-- Local Custom Admin CSS -->
+    <link rel="stylesheet" href="<?= URL_ROOT ?>/css/admin_style.css">
     <?php if (get_app_direction() === 'rtl'): ?>
-        <link rel="stylesheet" href="<?php echo URL_ROOT; ?>/css/rtl.css"> <!-- General RTL -->
-        <link rel="stylesheet" href="<?php echo URL_ROOT; ?>/css/admin_rtl.css"> <!-- Admin specific RTL -->
+        <link rel="stylesheet" href="<?= URL_ROOT ?>/css/rtl.css"> <?php // Main RTL styles ?>
+        <link rel="stylesheet" href="<?= URL_ROOT ?>/css/admin_rtl.css">
     <?php endif; ?>
-    <!-- Font Awesome for icons (if not already loaded globally) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <script> const URL_ROOT = "<?= URL_ROOT ?>"; </script>
 </head>
-<body>
-    <div class="admin-wrapper">
-        <aside class="admin-sidebar">
-            <h3><?php echo __('admin_menu_title', 'Admin Menu'); ?></h3>
-            <nav>
-                <ul>
-                    <li><a href="<?php echo URL_ROOT; ?>/admin/dashboard"><i class="fas fa-tachometer-alt fa-fw"></i> <?php echo __('admin_dashboard_link', 'Dashboard'); ?></a></li>
+<body class="admin-body bg-light">
+    <div class="admin-wrapper d-flex">
+        <aside class="admin-sidebar bg-dark text-white p-3 d-flex flex-column">
+            <div class="sidebar-header mb-3">
+                <a href="<?= URL_ROOT ?>/admin/dashboard" class="text-white text-decoration-none">
+                    <h3 class="fs-5"><i class="fas fa-school me-2"></i><?= htmlspecialchars(get_school_name() ?? get_application_name()) ?></h3>
+                </a>
+            </div>
+            <hr class="text-secondary mt-0">
 
-                    <li><hr></li>
-                    <li><strong><?php echo __('admin_settings_group_title', 'Settings'); ?></strong></li>
-                    <?php if (Auth::can('manage_general_settings') || (method_exists('Auth','can') && Auth::can('view_general_settings'))): ?>
-                        <li><a href="<?php echo URL_ROOT; ?>/admin/parametresgeneraux"><i class="fas fa-cogs fa-fw"></i> <?php echo __('admin_nav_general_settings', 'General'); ?></a></li>
-                    <?php endif; ?>
-                    <?php if (Auth::can('view_academic_years')): ?>
-                        <li><a href="<?php echo URL_ROOT; ?>/admin/anneesacademiques"><i class="fas fa-calendar-alt fa-fw"></i> <?php echo __('admin_nav_academic_years', 'Academic Years'); ?></a></li>
-                    <?php endif; ?>
-                    <?php if (Auth::can('manage_school_settings') || (method_exists('Auth','can') && Auth::can('view_school_settings'))): ?>
-                        <li><a href="<?php echo URL_ROOT; ?>/admin/parametresecole"><i class="fas fa-school fa-fw"></i> <?php echo __('admin_nav_school_settings', 'School Info'); ?></a></li>
-                    <?php endif; ?>
+            <nav class="nav flex-column flex-grow-1">
+                <a class="nav-link text-white" href="<?= URL_ROOT ?>/admin/dashboard"><i class="fas fa-home fa-fw me-2"></i><?= __('admin_dashboard_link') ?></a>
 
-                    <?php
-                    // Academic Management Group
-                    $canViewAcademicManagement = Auth::can('view_matieres') || Auth::can('view_classes') || Auth::can('view_enseignements') || Auth::can('view_programmes_scolaires');
-                    ?>
-                    <?php if ($canViewAcademicManagement): ?>
-                        <li><hr></li>
-                        <li><strong><?php echo __('admin_academic_management_group_title', 'Academic Management'); ?></strong></li>
-                        <?php if (Auth::can('view_matieres')): ?>
-                            <li><a href="<?php echo URL_ROOT; ?>/admin/matieres"><i class="fas fa-book fa-fw"></i> <?php echo __('admin_nav_subjects', 'Subjects'); ?></a></li>
-                        <?php endif; ?>
-                        <?php if (Auth::can('view_classes')): ?>
-                            <li><a href="<?php echo URL_ROOT; ?>/admin/classes"><i class="fas fa-chalkboard-teacher fa-fw"></i> <?php echo __('admin_nav_classes', 'Classes'); ?></a></li>
-                        <?php endif; ?>
-                        <?php if (Auth::can('view_enseignements')): ?>
-                            <li><a href="<?php echo URL_ROOT; ?>/admin/enseignements"><i class="fas fa-user-graduate fa-fw"></i> <?php echo __('admin_nav_assignments', 'Teacher Assignments'); ?></a></li>
-                        <?php endif; ?>
-                        <?php if (Auth::can('view_programmes_scolaires')): ?>
-                            <li><a href="<?php echo URL_ROOT; ?>/admin/programmesscolaires"><i class="fas fa-drafting-compass fa-fw"></i> <?php echo __('admin_nav_curricula', 'Curricula'); ?></a></li>
-                        <?php endif; ?>
+                <?php if (Auth::can('manage_general_settings') || Auth::can('view_academic_years') || Auth::can('manage_school_settings')): ?>
+                    <hr class="text-secondary my-2"><strong class="text-muted nav-section-title px-2 mb-1 d-block text-uppercase small"><?= __('admin_settings_group_title') ?></strong>
+                    <?php if (Auth::can('manage_general_settings')): ?><li><a class="nav-link text-white py-1" href="<?= URL_ROOT ?>/admin/parametresgeneraux"><i class="fas fa-cogs fa-fw me-2"></i><?= __('admin_nav_general_settings') ?></a></li><?php endif; ?>
+                    <?php if (Auth::can('view_academic_years')): ?><li><a class="nav-link text-white py-1" href="<?= URL_ROOT ?>/admin/anneesacademiques"><i class="fas fa-calendar-alt fa-fw me-2"></i><?= __('admin_nav_academic_years') ?></a></li><?php endif; ?>
+                    <?php if (Auth::can('manage_school_settings')): ?><li><a class="nav-link text-white py-1" href="<?= URL_ROOT ?>/admin/parametresecole"><i class="fas fa-landmark fa-fw me-2"></i><?= __('admin_nav_school_settings') ?></a></li><?php endif; ?>
+                <?php endif; ?>
+
+                <?php if (Auth::can('view_matieres') || Auth::can('view_classes') || Auth::can('view_enseignements') || Auth::can('view_programmes_scolaires')): ?>
+                    <hr class="text-secondary my-2"><strong class="text-muted nav-section-title px-2 mb-1 d-block text-uppercase small"><?= __('admin_academic_management_group_title') ?></strong>
+                    <?php if (Auth::can('view_matieres')): ?><li><a class="nav-link text-white py-1" href="<?= URL_ROOT ?>/admin/matieres"><i class="fas fa-book fa-fw me-2"></i><?= __('admin_nav_subjects') ?></a></li><?php endif; ?>
+                    <?php if (Auth::can('view_classes')): ?><li><a class="nav-link text-white py-1" href="<?= URL_ROOT ?>/admin/classes"><i class="fas fa-chalkboard-teacher fa-fw me-2"></i><?= __('admin_nav_classes') ?></a></li><?php endif; ?>
+                    <?php if (Auth::can('view_enseignements')): ?><li><a class="nav-link text-white py-1" href="<?= URL_ROOT ?>/admin/enseignements"><i class="fas fa-tasks fa-fw me-2"></i><?= __('admin_nav_assignments') ?></a></li><?php endif; ?>
+                    <?php if (Auth::can('view_programmes_scolaires')): ?><li><a class="nav-link text-white py-1" href="<?= URL_ROOT ?>/admin/programmesscolaires"><i class="fas fa-book-open fa-fw me-2"></i><?= __('admin_nav_curricula') ?></a></li><?php endif; ?>
+                <?php endif; ?>
+
+                <?php if (Auth::can('view_eleves')): ?>
+                    <hr class="text-secondary my-2"><strong class="text-muted nav-section-title px-2 mb-1 d-block text-uppercase small"><?= __('admin_student_management_group_title') ?></strong>
+                    <li><a class="nav-link text-white py-1" href="<?= URL_ROOT ?>/admin/eleves"><i class="fas fa-user-graduate fa-fw me-2"></i><?= __('admin_nav_students') ?></a></li>
+                     <?php if (Auth::can('import_export_eleves')): ?>
+                        <!-- <li><a class="nav-link text-white py-1" href="<?= URL_ROOT ?>/admin/eleves/importer"><i class="fas fa-file-import fa-fw me-2"></i><?= __('admin_nav_student_import') ?></a></li> -->
                     <?php endif; ?>
+                <?php endif; ?>
 
-                    <?php
-                    // Group for Student Management
-                    $canViewStudentManagement = Auth::can('view_eleves'); // Base permission for the group
-                    ?>
-                    <?php if ($canViewStudentManagement): ?>
-                        <li><hr></li>
-                        <li><strong><?= __('admin_student_management_group_title') ?></strong></li>
-                        <?php if (Auth::can('view_eleves')): ?>
-                            <li><a href="<?= URL_ROOT ?>/admin/eleves"><i class="fas fa-user-graduate fa-fw"></i> <?= __('admin_nav_students') ?></a></li>
-                        <?php endif; ?>
-                        <?php // Link to assign_classe is usually part of student edit, not separate nav item ?>
-                        <?php // Link to import/export could be here or on student list page
-                        if (Auth::can('import_export_eleves')): ?>
-                            <!-- <li><a href="<?= URL_ROOT ?>/admin/eleves/manage_imports_exports"><i class="fas fa-file-import fa-fw"></i> <?= __('admin_nav_student_import_export') ?></a></li> -->
-                        <?php endif; ?>
-                    <?php endif; ?>
+                <?php if (Auth::can('view_comptabilite_eleve') || Auth::can('view_reduction_types')): ?>
+                     <hr class="text-secondary my-2"><strong class="text-muted nav-section-title px-2 mb-1 d-block text-uppercase small"><?= __('admin_student_accounting_group_title') ?></strong>
+                     <?php if (Auth::can('view_comptabilite_eleve')): ?><li><a class="nav-link text-white py-1" href="<?= URL_ROOT ?>/admin/comptabiliteeleve"><i class="fas fa-cash-register fa-fw me-2"></i><?= __('admin_nav_student_accounts') ?></a></li><?php endif; ?>
+                     <?php if (Auth::can('view_reduction_types')): ?><li><a class="nav-link text-white py-1" href="<?= URL_ROOT ?>/admin/reductiontypes"><i class="fas fa-percent fa-fw me-2"></i><?= __('admin_nav_reduction_types') ?></a></li><?php endif; ?>
+                <?php endif; ?>
 
+                <?php if (Auth::can('view_users') || Auth::can('view_roles')): ?>
+                    <hr class="text-secondary my-2"><strong class="text-muted nav-section-title px-2 mb-1 d-block text-uppercase small"><?= __('admin_users_roles_group_title') ?></strong>
+                    <?php if (Auth::can('view_users')): ?><li><a class="nav-link text-white py-1" href="<?= URL_ROOT ?>/admin/users"><i class="fas fa-users fa-fw me-2"></i><?= __('admin_nav_users') ?></a></li><?php endif; ?>
+                    <?php if (Auth::can('view_roles')): ?><li><a class="nav-link text-white py-1" href="<?= URL_ROOT ?>/admin/roles"><i class="fas fa-user-tag fa-fw me-2"></i><?= __('admin_nav_roles') ?></a></li><?php endif; ?>
+                <?php endif; ?>
 
-                    <?php
-                    // Group for Student Accounting
-                    $canViewStudentAccounting = Auth::can('view_comptabilite_eleve') || Auth::can('view_reduction_types');
-                    ?>
-                    <?php if ($canViewStudentAccounting): ?>
-                        <li><hr></li>
-                        <li><strong><?= __('admin_student_accounting_group_title') ?></strong></li>
-                        <?php if (Auth::can('view_comptabilite_eleve')): ?>
-                            <li><a href="<?= URL_ROOT ?>/admin/comptabiliteeleve"><i class="fas fa-cash-register fa-fw"></i> <?= __('admin_nav_student_accounts') ?></a></li>
-                        <?php endif; ?>
-                        <?php if (Auth::can('view_reduction_types')): ?>
-                             <li><a href="<?= URL_ROOT ?>/admin/reductiontypes"><i class="fas fa-tags fa-fw"></i> <?= __('admin_nav_reduction_types') ?></a></li>
-                        <?php endif; ?>
-                    <?php endif; ?>
-
-                    <?php
-                    // Users & Roles Group
-                    $canViewUserManagement = Auth::can('view_users') || Auth::can('view_roles');
-                    ?>
-                    <?php if ($canViewUserManagement): ?>
-                        <li><hr></li>
-                        <li><strong><?php echo __('admin_users_roles_group_title', 'Users & Roles'); ?></strong></li>
-                        <?php if (Auth::can('view_users')): ?>
-                            <li><a href="<?php echo URL_ROOT; ?>/admin/users"><i class="fas fa-users fa-fw"></i> <?php echo __('admin_nav_users', 'Users'); ?></a></li>
-                        <?php endif; ?>
-                        <?php if (Auth::can('view_roles')): ?>
-                            <li><a href="<?php echo URL_ROOT; ?>/admin/roles"><i class="fas fa-user-tag fa-fw"></i> <?php echo __('admin_nav_roles', 'Roles'); ?></a></li>
-                        <?php endif; ?>
-                    <?php endif; ?>
-
-                    <?php if (Auth::can('access_superadmin_interface')): ?>
-                        <li><hr style="border-color: #4a627a;"></li>
-                        <li><strong><?php echo __('admin_superadmin_group_title', 'SuperAdmin Zone'); ?></strong></li>
-                        <li><a href="<?php echo URL_ROOT; ?>/superadmin/dashboard" style="color: #f1c40f;"><i class="fas fa-star fa-fw"></i> <?php echo __('admin_nav_superadmin_dashboard', 'SuperAdmin Panel'); ?></a></li>
-                    <?php endif; ?>
-
-                    <li><hr></li>
-                    <li><a href="<?php echo URL_ROOT; ?>/auth/logout" style="color: #e74c3c;"><i class="fas fa-sign-out-alt fa-fw"></i> <?php echo __('admin_logout_link', 'Logout'); ?></a></li>
-                    <li><hr></li>
-                    <li><a href="<?php echo URL_ROOT; ?>/"><i class="fas fa-home fa-fw"></i> <?php echo __('admin_back_to_site_link', 'Back to Main Site'); ?></a></li>
-                </ul>
+                <?php if (Auth::can('access_superadmin_interface')): ?>
+                    <hr class="text-secondary my-2"><strong class="text-warning nav-section-title px-2 mb-1 d-block text-uppercase small"><?= __('admin_superadmin_group_title') ?></strong>
+                    <li><a class="nav-link text-warning py-1" href="<?= URL_ROOT ?>/superadmin/dashboard"><i class="fas fa-user-shield fa-fw me-2"></i><?= __('admin_nav_superadmin_dashboard') ?></a></li>
+                <?php endif; ?>
             </nav>
-            <div style="padding: 10px; margin-top: 20px; border-top: 1px solid #34495e;">
-                <form method="GET" action="<?php echo URL_ROOT . '/' . htmlspecialchars($_GET['url'] ?? ''); ?>">
-                    <label for="lang_select_admin" style="color: #ecf0f1; font-size: 0.9em;"><?php echo __('language_selector_label', 'Language:'); ?></label>
-                    <select name="lang" id="lang_select_admin" onchange="this.form.submit()" style="width: 100%; padding: 5px; background-color: #34495e; color: #ecf0f1; border: 1px solid #2c3e50;">
+
+            <div class="mt-auto pt-3"> <!-- Pushes to bottom -->
+                <hr class="text-secondary my-2">
+                <a class="nav-link text-white py-1" href="<?= URL_ROOT ?>/auth/logout"><i class="fas fa-sign-out-alt fa-fw me-2"></i><?= __('admin_logout_link') ?></a>
+                <a class="nav-link text-white py-1" href="<?= URL_ROOT ?>/"><i class="fas fa-globe fa-fw me-2"></i><?= __('admin_back_to_site_link') ?></a>
+                <hr class="text-secondary my-2">
+                <form method="GET" action="<?= URL_ROOT . '/' . ($_GET['url'] ?? '') ?>">
+                    <label for="lang_select_admin" class="visually-hidden"><?= __('language_selector_label') ?></label>
+                    <select name="lang" id="lang_select_admin" class="form-select form-select-sm bg-dark text-white" onchange="this.form.submit()">
                         <?php foreach (getAvailableLanguages() as $langCode): ?>
-                            <option value="<?php echo $langCode; ?>" <?php echo (getCurrentLanguage() === $langCode ? 'selected' : ''); ?>>
-                                <?php echo strtoupper($langCode); ?>
-                            </option>
+                            <option value="<?= $langCode ?>" <?= (getCurrentLanguage() === $langCode ? 'selected' : '') ?>><?= strtoupper($langCode) ?></option>
                         <?php endforeach; ?>
                     </select>
                     <?php
-                    $queryParams = [];
-                    parse_str($_SERVER['QUERY_STRING'] ?? '', $queryParams);
-                    foreach ($queryParams as $key => $value) {
-                        if ($key !== 'lang') {
-                            echo '<input type="hidden" name="' . htmlspecialchars($key) . '" value="' . htmlspecialchars($value) . '">';
-                        }
-                    }
+                        if (isset($_GET['url'])) { echo '<input type="hidden" name="url" value="' . htmlspecialchars($_GET['url']) . '">'; }
+                        $preservedParams = $_GET; unset($preservedParams['lang']); unset($preservedParams['url']);
+                        foreach ($preservedParams as $key => $value) { echo '<input type="hidden" name="' . htmlspecialchars($key) . '" value="' . htmlspecialchars($value) . '">'; }
                     ?>
                 </form>
             </div>
         </aside>
-        <main class="admin-main-content">
-            <header class="admin-header">
-                <h2><?php echo htmlspecialchars(get_school_name()); ?> - <?php echo __('admin_panel_title', 'Administration Panel'); ?></h2>
-                <?php if (isset($title)): ?>
-                    <h3><?php echo htmlspecialchars($title); ?></h3>
-                <?php endif; ?>
-            </header>
-            <div class="admin-page-content">
-              <?php
-                // Flash message display (using Auth::displayFlash() is preferred if it exists and is robust)
-                if (class_exists('App\Core\Auth') && method_exists('App\Core\Auth', 'displayFlash')) {
-                    echo \App\Core\Auth::displayFlash();
-                } elseif (isset($_SESSION['flash_message'])) {
-                    $flash = $_SESSION['flash_message'];
-                    $alertType = is_array($flash) ? ($flash['type'] ?? 'info') : 'info';
-                    $alertMessage = is_array($flash) ? ($flash['text'] ?? '') : $flash;
-                    unset($_SESSION['flash_message']);
-                    echo '<div class="alert alert-' . htmlspecialchars($alertType) . '" role="alert">' . htmlspecialchars($alertMessage) . '</div>';
-                }
-              ?>
-              <?php echo $content_for_layout ?? '<!-- Page Content Here -->'; ?>
+        <main class="admin-main-content flex-grow-1 p-4">
+            <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm mb-4 admin-top-nav">
+                <div class="container-fluid">
+                    <button class="btn btn-sm btn-outline-secondary me-2 d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#adminSidebarContent" aria-controls="adminSidebarContent" aria-expanded="false" aria-label="Toggle navigation">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h2 class="h4 mb-0 flex-grow-1"><?= isset($title) ? htmlspecialchars($title) : __('admin_panel_title') ?></h2>
+                    <div class="d-flex align-items-center">
+                        <span class="navbar-text me-3">
+                           <i class="fas fa-user-circle me-1"></i> <?= htmlspecialchars(Auth::getCurrentUser()->nom ?? 'User') ?>
+                        </span>
+                        <a href="<?= URL_ROOT ?>/auth/logout" class="btn btn-sm btn-outline-danger"><i class="fas fa-sign-out-alt"></i> <?= __('logout_link_text', 'Logout')?></a>
+                    </div>
+                </div>
+            </nav>
+             <!-- Collapsible sidebar content for small screens -->
+            <div class="collapse d-lg-none" id="adminSidebarContent">
+                <!-- Content of aside duplicated here or handled via JS to move it -->
             </div>
+
+            <div class="admin-page-content bg-white p-3 shadow-sm rounded">
+                <?php
+                if (isset($_SESSION['flash_message']) && is_array($_SESSION['flash_message'])) {
+                    echo '<div class="alert alert-' . htmlspecialchars($_SESSION['flash_message']['type']) . ' alert-dismissible fade show" role="alert">'
+                         . htmlspecialchars($_SESSION['flash_message']['text'])
+                         . '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>';
+                    unset($_SESSION['flash_message']);
+                }
+                ?>
+                <?= $content_for_layout ?? '<!-- Page content will be inserted here by the controller -->'; ?>
+            </div>
+            <footer class="admin-footer mt-auto py-3 text-center text-muted">
+                 <small>&copy; <?= date('Y') ?> <?= htmlspecialchars(get_application_name()) ?>. <?= __('admin_footer_rights_reserved', 'All rights reserved.') ?></small>
+            </footer>
         </main>
     </div>
-    <script>
-        const URL_ROOT = "<?php echo URL_ROOT; ?>";
-        // Other global JS variables can be defined here
-    </script>
-    <?php // Global JS scripts can be loaded here if needed for admin panel, e.g. Bootstrap JS for dropdowns ?>
-    <!-- <script src="https_//code.jquery.com/jquery-3.5.1.slim.min.js"></script> -->
-    <!-- <script src="https_//cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script> -->
-    <!-- <script src="https_//stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script> -->
+    <!-- Local Bootstrap JS Bundle (includes Popper) -->
+    <script src="<?= URL_ROOT ?>/vendors/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <!-- Local Custom Admin JS (if any) -->
+    <!-- <script src="<?= URL_ROOT ?>/js/admin_main.js"></script> -->
 </body>
 </html>

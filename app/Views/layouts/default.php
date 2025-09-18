@@ -1,121 +1,100 @@
 <!DOCTYPE html>
-<html lang="<?php echo getCurrentLanguage(); ?>" dir="<?php echo getLocaleDirection(); ?>">
+<html lang="<?= getCurrentLanguage() ?>" dir="<?= get_app_direction() ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <?php
-        // Use application name from DB settings if available, otherwise site_title key, then SITE_NAME constant
-        $application_name = function_exists('get_application_name') ? get_application_name() : (defined('SITE_NAME') ? SITE_NAME : 'School App');
-        $site_title_key = __('site_title', $application_name); // Pass $application_name as default for site_title key
-    ?>
-    <title><?php echo htmlspecialchars($data['title'] ?? $site_title_key); ?></title>
+    <title><?= htmlspecialchars(get_application_name()) ?> - <?= isset($title) ? htmlspecialchars($title) : __('site_tagline_default', 'Your reliable educational management platform.') ?></title>
 
-    <link rel="stylesheet" href="<?php echo URL_ROOT; ?>/css/style.css">
-    <?php if (getCurrentLanguage() === 'ar'): ?>
-        <link rel="stylesheet" href="<?php echo URL_ROOT; ?>/css/rtl.css">
+    <!-- Local Bootstrap CSS -->
+    <link rel="stylesheet" href="<?= URL_ROOT ?>/vendors/bootstrap/css/bootstrap.min.css">
+    <!-- Local Font Awesome CSS -->
+    <link rel="stylesheet" href="<?= URL_ROOT ?>/vendors/fontawesome/css/all.min.css">
+
+    <!-- Local Custom CSS -->
+    <link rel="stylesheet" href="<?= URL_ROOT ?>/css/style.css">
+    <?php if (get_app_direction() === 'rtl'): ?>
+        <link rel="stylesheet" href="<?= URL_ROOT ?>/css/rtl.css">
     <?php endif; ?>
+
+    <script>
+        const URL_ROOT = "<?= URL_ROOT ?>"; // Global JS var for URL_ROOT
+    </script>
 </head>
 <body>
-    <header class="container">
-        <nav class="navbar">
-            <a class="navbar-brand" href="<?php echo URL_ROOT; ?>">
-                <?php
-                $logo_path = function_exists('get_school_logo_path') ? get_school_logo_path() : null;
-                if ($logo_path && file_exists(FCPATH . $logo_path)): // FCPATH defined in public/index.php
-                ?>
-                    <img src="<?php echo URL_ROOT . '/' . htmlspecialchars($logo_path); ?>" alt="<?php echo htmlspecialchars(get_school_name()); ?> Logo" style="max-height: 40px; margin-right: 10px;">
-                <?php else: ?>
-                    <?php echo htmlspecialchars(get_school_name()); // Display school name if no logo ?>
-                <?php endif; ?>
-            </a>
-            <ul class="navbar-nav">
-                <li class="nav-item">
-                    <a class="nav-link" href="<?php echo URL_ROOT; ?>/home/index"><?php echo __('welcome_message'); ?></a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="<?php echo URL_ROOT; ?>/home/about"><?php echo __('go_to_about'); ?></a>
-                </li>
-                <?php if (class_exists('App\Core\AuthSession') && \App\Core\AuthSession::isLoggedIn()): ?>
-                    <?php if (\App\Core\AuthSession::hasRole(['admin', 'super_admin'])): ?>
-                        <li class="nav-item dropdown"> <!-- Basic dropdown example -->
-                            <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                Admin
-                            </a>
-                            <div class="dropdown-menu" aria-labelledby="adminDropdown">
-                                <a class="dropdown-item" href="<?= URL_ROOT ?>/admin/parametresgeneraux">Paramètres Généraux</a>
-                                <a class="dropdown-item" href="<?= URL_ROOT ?>/admin/parametresecole">Paramètres École</a>
-                                <a class="dropdown-item" href="<?= URL_ROOT ?>/admin/anneesacademiques">Années Académiques</a>
-                                <!-- Add more admin links here -->
-                            </div>
-                        </li>
+    <header class="bg-dark text-white p-3 mb-4">
+        <div class="container">
+            <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
+                <a href="<?= URL_ROOT ?>/" class="d-flex align-items-center mb-2 mb-lg-0 text-white text-decoration-none">
+                    <i class="fas fa-school fa-2x me-2"></i> <!-- Example icon -->
+                    <span class="fs-4"><?= htmlspecialchars(get_school_name()) ?></span>
+                </a>
+
+                <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0 ms-lg-4">
+                    <li><a href="<?= URL_ROOT ?>/" class="nav-link px-2 text-white"><?= __('home_link_text', 'Home') ?></a></li>
+                    <li><a href="<?= URL_ROOT ?>/home/about" class="nav-link px-2 text-white"><?= __('about_us_link_text', 'About') ?></a></li>
+                    <?php if(auth_is_logged_in()): ?>
+                        <?php
+                        // Determine appropriate dashboard link
+                        $dashboard_link = URL_ROOT . '/user/dashboard'; // Generic dashboard
+                        if (Auth::can('view_admin_dashboard')) $dashboard_link = URL_ROOT . '/admin/dashboard';
+                        // Add more specific role-based dashboards if needed e.g. /student/dashboard, /teacher/dashboard
+                        ?>
+                        <li><a href="<?= $dashboard_link ?>" class="nav-link px-2 text-white"><?= __('user_dashboard_link_text', 'My Dashboard') ?></a></li>
                     <?php endif; ?>
-                <?php endif; ?>
+                </ul>
 
-
-            </ul>
-            <div class="ml-auto">
-                <form method="GET" action="<?php echo URL_ROOT . '/' . htmlspecialchars($_GET['url'] ?? ''); ?>" style="display: inline-block; margin:0;">
-                    <label for="lang_select" style="margin-right: 5px; color: <?php echo (getCurrentLanguage() === 'ar' ? '#fff':'#333'); ?>;"><?php echo __('language_selector_label'); ?></label>
-                    <select name="lang" id="lang_select" onchange="this.form.submit()" style="padding: 5px;">
-                        <?php foreach (getAvailableLanguages() as $langCode): ?>
-                            <option value="<?php echo $langCode; ?>" <?php echo (getCurrentLanguage() === $langCode ? 'selected' : ''); ?>>
-                                <?php echo strtoupper($langCode); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                    <?php
-                    $queryParams = [];
-                    parse_str($_SERVER['QUERY_STRING'] ?? '', $queryParams);
-                    foreach ($queryParams as $key => $value) {
-                        if ($key !== 'lang') {
-                            echo '<input type="hidden" name="' . htmlspecialchars($key) . '" value="' . htmlspecialchars($value) . '">';
-                        }
-                    }
-                    ?>
-                </form>
-                 <?php if (class_exists('App\Core\AuthSession') && \App\Core\AuthSession::isLoggedIn()): ?>
-                    <a href="<?= URL_ROOT ?>/auth/logout" class="nav-link" style="display: inline-block; margin-left: 10px;"><?= __('logout_button', 'Logout')?></a>
-                <?php else: ?>
-                     <a href="<?= URL_ROOT ?>/auth/login" class="nav-link" style="display: inline-block; margin-left: 10px;"><?= __('login_button', 'Login')?></a>
-                <?php endif; ?>
+                <div class="ms-lg-auto d-flex align-items-center">
+                    <form method="GET" action="<?= URL_ROOT . '/' . ($_GET['url'] ?? '') ?>" class="me-2">
+                        <label for="lang_select_main" class="visually-hidden"><?= __('language_selector_label') ?></label>
+                        <select name="lang" id="lang_select_main" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width: 70px;">
+                            <?php foreach (getAvailableLanguages() as $langCode): ?>
+                                <option value="<?= $langCode ?>" <?= (getCurrentLanguage() === $langCode ? 'selected' : '') ?>><?= strtoupper($langCode) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <?php
+                            if (isset($_GET['url'])) { echo '<input type="hidden" name="url" value="' . htmlspecialchars($_GET['url']) . '">'; }
+                            $preservedParams = $_GET; unset($preservedParams['lang']); unset($preservedParams['url']);
+                            foreach ($preservedParams as $key => $value) { echo '<input type="hidden" name="' . htmlspecialchars($key) . '" value="' . htmlspecialchars($value) . '">'; }
+                        ?>
+                    </form>
+                    <div class="text-end">
+                        <?php if(auth_is_logged_in()): ?>
+                            <a href="<?= URL_ROOT ?>/auth/logout" class="btn btn-outline-light btn-sm"><?= __('logout_link_text', 'Logout') ?></a>
+                        <?php else: ?>
+                            <a href="<?= URL_ROOT ?>/auth/login" class="btn btn-outline-light btn-sm me-2"><?= __('login_link_text', 'Login') ?></a>
+                            <?php /* Assuming registration is open, add a register button if desired */ ?>
+                            <!-- <a href="<?= URL_ROOT ?>/auth/register" class="btn btn-warning btn-sm"><?= __('register_link_text', 'Register') ?></a> -->
+                        <?php endif; ?>
+                    </div>
+                </div>
             </div>
-        </nav>
+        </div>
     </header>
 
-    <main class="container">
+    <main class="container py-4">
         <?php
-        if (class_exists('App\Core\AuthSession') && method_exists('App\Core\AuthSession', 'displayFlash')) {
-            echo \App\Core\AuthSession::displayFlash();
-        } elseif (isset($_SESSION['flash_message'])) {
-            $flash = $_SESSION['flash_message'];
-            $alertType = is_array($flash) ? ($flash['type'] ?? 'info') : 'info';
-            $alertMessage = is_array($flash) ? ($flash['text'] ?? '') : $flash;
+        if (isset($_SESSION['flash_message']) && is_array($_SESSION['flash_message'])) {
+            echo '<div class="alert alert-' . htmlspecialchars($_SESSION['flash_message']['type']) . ' alert-dismissible fade show" role="alert">'
+                 . htmlspecialchars($_SESSION['flash_message']['text'])
+                 . '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>';
             unset($_SESSION['flash_message']);
-            echo '<div class="alert alert-' . htmlspecialchars($alertType) . '" role="alert">' . htmlspecialchars($alertMessage) . '</div>';
         }
         ?>
-        <?php echo $content_for_layout ?? '<!-- Page Content Goes Here -->'; ?>
-
-        <p style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px;">
-            <em><?php echo __('current_language_is'); ?></em>
-        </p>
+        <?= $content_for_layout ?? '<!-- Page content will be_inserted here by the controller -->'; ?>
     </main>
 
-    <footer class="footer">
-        <p>&copy; <?php echo date('Y'); ?> <?php echo htmlspecialchars(get_school_name()); ?> - <?php echo __('site_title', $application_name); ?></p>
-       <?php $schoolType = get_school_type(); ?>
-       <?php if ($schoolType === 'public'): ?>
-           <p><small><?= __('footer_info_public_school', 'This is a public educational institution.') ?></small></p>
-       <?php elseif ($schoolType === 'prive'): ?>
-           <p><small><?= __('footer_info_private_school', 'This is a private educational institution.') ?></small></p>
-       <?php elseif ($schoolType === 'parapublic'): ?>
-           <p><small><?= __('footer_info_parapublic_school', 'This is a semi-public educational institution.') ?></small></p>
-       <?php endif; ?>
+    <footer class="container mt-5 py-3 border-top text-center">
+        <p>&copy; <?= date('Y') ?> <?= htmlspecialchars(get_school_name() ?? get_application_name()) ?>. <?= __('site_title') ?>.</p>
+        <?php
+            $schoolType = get_setting('school_type', 'public'); // Assuming get_setting helper
+            $footerMessageKey = 'footer_info_' . $schoolType;
+            echo '<p><small>' . __($footerMessageKey, '') . '</small></p>';
+        ?>
     </footer>
 
-    <!-- Basic Bootstrap JS for dropdowns, etc. (Optional if not using Bootstrap JS components) -->
-    <script src="https_//code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https_//cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
-    <script src="https_//stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <!-- Local Bootstrap JS Bundle (includes Popper) -->
+    <script src="<?= URL_ROOT ?>/vendors/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <!-- Local Custom JS (if any) -->
+    <!-- <script src="<?= URL_ROOT ?>/js/main.js"></script> -->
 </body>
 </html>
